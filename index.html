@@ -9,15 +9,15 @@
 *{box-sizing:border-box}
 body{margin:0;padding:clamp(12px,3vw,32px);background:var(--desk);color:var(--ink);font:15px/1.5 var(--f);-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
 main{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
-header{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:var(--sh)}
-h1{font:700 1.65rem/1 var(--f);margin:0;letter-spacing:-.03em;background:linear-gradient(135deg,var(--p1),var(--p2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-header p{margin:0;color:var(--mut);font-size:.88rem}
+header{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:var(--sh)}
+h1{font:700 1.75rem/1 var(--f);margin:0;letter-spacing:-.03em;background:linear-gradient(135deg,var(--p1),var(--p2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+header p{margin:0;color:var(--mut);font-size:.9rem}
 .elo-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;background:color-mix(in srgb,var(--gold) 15%,var(--paper));border:1px solid color-mix(in srgb,var(--gold) 50%,var(--line));font-weight:700;font-size:.88rem;color:var(--ink)}
 .elo-pill b{color:var(--gold);font-variant-numeric:tabular-nums}
 
-/* ELO Power-ups Bar */
+/* ELO Power-ups Panel */
 .elo-shop{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:10px}
-.elo-shop-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:.85rem;font-weight:700}
+.elo-shop-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:.86rem;font-weight:700}
 .elo-badges{display:flex;gap:6px;flex-wrap:wrap}
 .ebadge{font-size:.75rem;padding:2px 9px;border-radius:99px;font-weight:700;animation:pop .25s ease}
 .eb-star{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold);border:1px solid var(--gold)}
@@ -30,6 +30,18 @@ header p{margin:0;color:var(--mut);font-size:.88rem}
 .sitem-top{display:flex;width:100%;justify-content:space-between;align-items:center;font-weight:700;font-size:.84rem}
 .sitem-cost{font-size:.73rem;font-weight:700;padding:1px 7px;border-radius:99px;background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac)}
 .sitem-desc{font-size:.74rem;color:var(--mut);line-height:1.3;font-weight:400}
+
+/* Leaderboard Panel */
+.lb-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:var(--sh)}
+.lb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-weight:700;font-size:.95rem}
+.lb-table{width:100%;border-collapse:collapse;font-size:.86rem}
+.lb-table th{text-align:left;color:var(--mut);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+.lb-table td{padding:7px 8px;border-bottom:1px solid color-mix(in srgb,var(--line) 50%,transparent)}
+.lb-table tr:last-child td{border-bottom:none}
+.lb-rank{font-weight:800;width:3.2ch}
+.lb-rank-1{color:#f59f00}.lb-rank-2{color:#868e96}.lb-rank-3{color:#d9480f}
+.lb-elo{font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
+.lb-btn{padding:3px 10px;font-size:.76rem;border-radius:7px}
 
 .players{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .pl{display:flex;align-items:center;gap:10px;padding:11px 15px;background:var(--card);border:1.5px solid var(--line);border-radius:13px;box-shadow:var(--sh);transition:border-color .25s,box-shadow .25s}
@@ -118,21 +130,21 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
   <h1>Sprouts</h1>
   <p>Draw curves, grow new spots, and leave your opponent without a move.</p>
   <span class="sp"></span>
-  <span class="elo-pill">🏆 ELO: <b id="elo-val">100</b></span>
+  <span class="elo-pill" title="Điểm ELO hiện tại của bạn">🏆 ELO: <b id="elo-val">100</b></span>
   <button id="mu"></button>
   <button id="th"></button>
 </header>
 
-<!-- ELO Power-ups (Xài lúc nào cũng được khi đủ điểm ELO) -->
+<!-- ELO Power-ups (Xài lúc nào cũng được nếu có đủ điểm ELO) -->
 <section class="elo-shop">
   <div class="elo-shop-head">
-    <span>⚡ Đặc quyền ELO (Dùng bất cứ lúc nào)</span>
+    <span>⚡ Đặc quyền ELO (Dùng bất cứ lúc nào khi đủ điểm)</span>
     <div class="elo-badges" id="elo-badges"></div>
   </div>
   <div class="shop-grid">
     <button class="sitem" id="btn-star" style="--ac:var(--gold)">
       <div class="sitem-top"><span>⭐ Ngôi sao hi vọng</span><span class="sitem-cost">20 ELO</span></div>
-      <span class="sitem-desc">Đặt cược vào ván đấu, thắng nhận <b>x2 ELO</b></span>
+      <span class="sitem-desc">Đặt cược vào ván đấu, thắng thì <b>x2 ELO</b></span>
     </button>
     <button class="sitem" id="btn-baycho" style="--ac:var(--purp)">
       <div class="sitem-top"><span>🚫 Bảy chọ</span><span class="sitem-cost">25 ELO</span></div>
@@ -179,6 +191,29 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 <div class="bar">
 <span class="sp"></span><button id="zo" title="Zoom out" aria-label="Zoom out">−</button><button id="zi" title="Zoom in" aria-label="Zoom in">+</button><button id="ft" title="Fit everything in view">Fit</button><button id="un">Undo</button><button id="nw" class="pri">New game</button>
 </div>
+
+<!-- Bảng Xếp Hạng ELO (Leaderboard) & Tìm trận nhanh -->
+<section class="lb-card">
+  <div class="lb-head">
+    <span>📊 Bảng Xếp Hạng ELO (Leaderboard)</span>
+    <button id="btn-find-match" class="pri">⚔️ Tìm trận ngẫu nhiên</button>
+  </div>
+  <table class="lb-table">
+    <thead>
+      <tr>
+        <th>Hạng</th>
+        <th>Người chơi</th>
+        <th>Điểm ELO</th>
+        <th>Trạng thái</th>
+        <th>Thách đấu</th>
+      </tr>
+    </thead>
+    <tbody id="lb-body">
+      <tr><td colspan="5" style="color:var(--mut);text-align:center">Đang tải bảng xếp hạng...</td></tr>
+    </tbody>
+  </table>
+</section>
+
 <details><summary>How to play</summary>
 <p>Players alternate. On your turn, press on a spot and drag to another spot (or back to the same spot to make a loop). The curve may not cross any line, itself included, or pass through another spot. A new spot is then placed at the middle of your curve.</p>
 <p>The board is endless. Scroll or pinch to zoom, and drag empty space to move the view. Lines are elastic: between moves they pull straight and push each other apart, so the drawing keeps rearranging itself and never clogs.</p>
@@ -207,7 +242,7 @@ const names=['Player 1','Player 2'],ptr=new Map();
 let ph='lobby',rdy=[false,false],cdt=0,rz=false,rzA=false,ended=false,warned=false,lsec=-1,bt=0,fxr=false,mute=false,ac;const fx=[];
 try{mute=localStorage.getItem('sp-mute')=='1'}catch(e){}
 
-// ---- ELO & POWER-UPS STATE ----
+// ---- HỆ THỐNG ELO, LEADERBOARD & ĐẶC QUYỀN ----
 const socket = typeof io !== 'undefined' ? io() : null;
 let userElo = 100;
 try {
@@ -215,12 +250,13 @@ try {
   if (s !== null && !isNaN(Number(s))) userElo = Math.max(0, Number(s));
 } catch(e) {}
 
-let hopeStarActive = false;   // Ngôi sao hi vọng: x2 ELO khi thắng
-let bayChoUntil = 0;          // Bảy chọ: chặn thách đấu 3 phút
-let shieldActive = false;     // Khiên bảo hộ: không bị trừ điểm nếu thua
-let hintPath = null;          // Thấu thị: đường gợi ý nước đi hợp lệ
+let hopeStarActive = false;   // Ngôi sao hi vọng (20 ELO -> x2 ELO khi thắng)
+let bayChoUntil = 0;          // Bảy chọ (25 ELO -> chặn thách đấu 3 phút)
+let shieldActive = false;     // Khiên bảo hộ (30 ELO -> miễn trừ ELO khi thua)
+let hintPath = null;          // Thấu thị (25 ELO -> gợi ý 1 nước đi hợp lệ)
+let latestLeaderboard = [];
 
-function syncEloUI() {
+function syncEloAndServer() {
   try { localStorage.setItem('sp-elo', String(userElo)); } catch(e) {}
   $('elo-val').textContent = userElo;
   const bcLeft = Math.max(0, Math.ceil((bayChoUntil - Date.now()) / 1000));
@@ -242,6 +278,42 @@ function syncEloUI() {
   if (hopeStarActive) b.innerHTML += `<span class="ebadge eb-star">⭐ Ngôi sao hi vọng (x2)</span>`;
   if (bcLeft > 0) b.innerHTML += `<span class="ebadge eb-bc">🚫 Bảy chọ (${Math.floor(bcLeft/60)}:${String(bcLeft%60).padStart(2,'0')})</span>`;
   if (shieldActive) b.innerHTML += `<span class="ebadge eb-sh">🛡️ Khiên bảo hộ</span>`;
+
+  if (socket) {
+    const myIdx = seat >= 0 ? seat : 0;
+    socket.emit('sync_player', { name: names[myIdx], elo: userElo, blockedUntil: bayChoUntil });
+  }
+}
+
+function renderLeaderboard(list) {
+  latestLeaderboard = list || latestLeaderboard;
+  const tbody = $('lb-body');
+  if (!latestLeaderboard.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--mut);text-align:center">Chưa có người chơi nào trên bảng xếp hạng.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = '';
+  latestLeaderboard.forEach(p => {
+    const isMe = socket && p.id === socket.id;
+    const bcLeft = Math.max(0, Math.ceil((p.blockedUntil - Date.now()) / 1000));
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="lb-rank lb-rank-${p.rank}">#${p.rank}</td>
+      <td><b>${p.name}</b> ${isMe ? '<small style="color:var(--p2)">(Bạn)</small>' : ''}</td>
+      <td class="lb-elo">${p.elo} ELO</td>
+      <td>${bcLeft > 0 ? `<span style="color:var(--purp);font-weight:600">🚫 Bảy chọ (${bcLeft}s)</span>` : '<span style="color:var(--teal)">● Sẵn sàng</span>'}</td>
+      <td>${isMe ? '—' : `<button class="lb-btn ${bcLeft > 0 ? '' : 'pri'}" ${bcLeft > 0 ? 'disabled' : ''}>${bcLeft > 0 ? 'Đang chặn' : 'Thách đấu'}</button>`}</td>
+    `;
+    const btn = tr.querySelector('button');
+    if (btn && !btn.disabled) {
+      btn.onclick = async () => {
+        if (!room) await hostRoom();
+        if (socket) socket.emit('challenge_player', { targetId: p.id, room });
+        ns(`Đã gửi lời thách đấu tới ${p.name}!`);
+      };
+    }
+    tbody.appendChild(tr);
+  });
 }
 
 // 1/ Ngôi sao hi vọng (20 ELO)
@@ -251,7 +323,7 @@ $('btn-star').onclick = () => {
   hopeStarActive = true;
   snd('chime');
   banner('⭐ Đã bật Ngôi sao hi vọng (x2 ELO khi thắng)!', css('--gold'), 2000);
-  syncEloUI();
+  syncEloAndServer();
 };
 
 // 2/ Bảy chọ (25 ELO - Chặn thách đấu 3 phút)
@@ -260,9 +332,8 @@ $('btn-baycho').onclick = () => {
   userElo -= 25;
   bayChoUntil = Date.now() + 3 * 60 * 1000;
   snd('ready');
-  if (socket) socket.emit('activate_bay_cho');
   banner('🚫 Đã bật Bảy chọ (Chặn thách đấu 3 phút)!', css('--purp'), 2000);
-  syncEloUI();
+  syncEloAndServer();
 };
 
 // 3a/ Đồng hồ cát (15 ELO - +45s)
@@ -275,7 +346,7 @@ $('btn-time').onclick = () => {
   clocks();
   send({ t: 'state', s: pack() });
   banner('⏳ +45 giây vào đồng hồ!', css('--p2'), 1600);
-  syncEloUI();
+  syncEloAndServer();
 };
 
 // 3b/ Thấu thị (25 ELO - Gợi ý 1 nước đi hợp lệ)
@@ -298,7 +369,7 @@ $('btn-hint').onclick = () => {
   hintPath = found;
   snd('sat');
   draw();
-  syncEloUI();
+  syncEloAndServer();
   setTimeout(() => { hintPath = null; draw(); }, 4000);
 };
 
@@ -309,13 +380,31 @@ $('btn-shield').onclick = () => {
   shieldActive = true;
   snd('ready');
   banner('🛡️ Đã bật Khiên bảo hộ!', css('--teal'), 1800);
-  syncEloUI();
+  syncEloAndServer();
+};
+
+// Nút bấm tìm trận ngẫu nhiên trên Leaderboard (giữ nguyên sự kiện find_match gốc)
+$('btn-find-match').onclick = () => {
+  if (!socket) return;
+  socket.emit('find_match', { nodes: parseInt($('n').value, 10) });
 };
 
 if (socket) {
+  socket.on('leaderboard_update', renderLeaderboard);
+  socket.on('waiting', d => ns(d.message));
+  socket.on('match_found', d => { ns(`Tìm thấy trận: ${d.roomId}`); });
+  socket.on('error_message', d => ns(d.message));
   socket.on('challenge_blocked', d => { snd('bad'); banner(d.message, css('--purp'), 2500); });
+  socket.on('incoming_challenge', d => {
+    snd('chime');
+    if (confirm(`⚔️ ${d.fromName} thách đấu bạn! Tham gia phòng ${d.room}?`)) joinRoom(d.room);
+  });
 }
-setInterval(syncEloUI, 1000);
+
+setInterval(() => {
+  syncEloAndServer();
+  renderLeaderboard();
+}, 1000);
 
 // ---- UNIQUE PLAYER NAME & VALIDATION SYSTEM ----
 function normalizePlayerName(name) {
@@ -347,11 +436,11 @@ let baseGameScore = 10; // Điểm gốc mặc định mỗi trận
 
 async function loadQuizData() {
   try {
-    const res = await fetch('quizz.json');
+    const res = await fetch('quiz-data.json');
     const data = await res.json();
     quizBank = data.questions || [];
   } catch(e) {
-    console.error('Không thể tải ngân hàng câu hỏi quizz.json', e);
+    console.error('Không thể tải ngân hàng câu hỏi quiz-data.json', e);
   }
 }
 loadQuizData();
@@ -489,19 +578,19 @@ function finalizeMatchScore(isWinner, streakAchieved) {
     hopeStarActive = false;
     if (shieldActive) {
       shieldActive = false;
-      reportText = `🛡️ KHIÊN BẢO HỘ ĐỠ ĐÒN! Bạn không bị trừ ELO.`;
+      reportText = `🛡️ KHIÊN BẢO HỘ KÍCH HOẠT! Bạn không bị trừ ELO.`;
     } else if (streakAchieved) {
       finalScore = Math.max(0, baseGameScore - 0.5); // Giảm phạt còn 0.5đ
       userElo = Math.max(0, userElo - 0.5);
-      reportText = `🛡️ THUA NHƯNG CỨU TRỢ THÀNH CÔNG! Phạt cố định chỉ còn: 0.5đ`;
+      reportText = `🛡️ THUT NHƯNG CỨU TRỢ THÀNH CÔNG! Phạt cố định chỉ còn: 0.5đ (Điểm cuối: ${finalScore})`;
     } else {
       finalScore = baseGameScore - 2; // Phạt chuẩn thông thường
       userElo = Math.max(0, userElo - 2);
-      reportText = `💔 THẤT BẠI. Áp dụng mức phạt chuẩn (-2 ELO).`;
+      reportText = `💔 THẤT BẠI. Áp dụng mức phạt chuẩn. Điểm cuối: ${finalScore}`;
     }
   }
 
-  syncEloUI();
+  syncEloAndServer();
   banner(reportText, pc(turn^1), 4000);
   console.log(reportText);
 }
@@ -533,13 +622,13 @@ function endFx(){
   // Kích hoạt Quiz sau trận đấu (Winner/Loser)
   setTimeout(() => {
     scoreFinalized = false;
-    const isWinner = (seat >= 0 ? seat === w : true);
+    const isWinner = (seat >= 0 ? seat === w : true); // Hoặc logic phân định người chơi hiện tại
     startQuizSession(isWinner);
   }, 1500);
 }
 
 // ---- lobby / ready / countdown ----
-function setPh(p){ph=p;document.body.dataset.ph=p;lobbyUI();syncEloUI()}
+function setPh(p){ph=p;document.body.dataset.ph=p;lobbyUI();syncEloAndServer()}
 function lobbyUI(){
   const L=ph=='lobby';
   [0,1].forEach(i=>{const b=$('r'+i);b.hidden=ph=='play';b.classList.toggle('on',rdy[i]);b.textContent=rdy[i]?'✓ Ready':'Ready?';b.disabled=!L||(seat>=0&&i!=seat);
@@ -584,7 +673,7 @@ function lottery(target){
     if(tk!=lt)return;
     snd('tick');sp.forEach((e,i)=>e.classList.toggle('hl',i==t%2));
     if(++t<N)setTimeout(step,d*=1.12);
-    else setTimeout(()=>{if(tk!=lt)return;o.hidden=true;go=true;last=performance.now();snd('go');banner(names[turn]+' moves first',pc(turn));info();syncEloUI();draw()},260)
+    else setTimeout(()=>{if(tk!=lt)return;o.hidden=true;go=true;last=performance.now();snd('go');banner(names[turn]+' moves first',pc(turn));info();syncEloAndServer();draw()},260)
   };
   step();
 }
@@ -726,7 +815,7 @@ function info(){
     :seat>=0&&turn!=seat?[t('Waiting for '),b(turn),t(' to move…')]
     :[b(turn),t((seat>=0?', your turn: ':': ')+'draw a curve between two spots, or loop one back to itself. Moves so far: '+mv+'.')]));
   clocks();$('nw').textContent=over?'Back to lobby':rzA?'Sure? Resign':'Resign';$('nw').disabled=ph!='play'||(!over&&!go);
-  syncEloUI();
+  syncEloAndServer();
   if(over&&ph=='play'&&!ended){ended=true;endFx()}
 }
 function draw(){
@@ -804,11 +893,15 @@ addEventListener('resize',draw);
       names[i] = validation.normalized;
       info();
       send({t:'name', i, v: names[i]});
+      syncEloAndServer();
+    } else {
+      // Nếu không hợp lệ khi nhập (nhưng cho phép gõ tạm, sẽ khôi phục hoặc chuẩn hóa khi blur/change nếu trống)
     }
   };
   $('p'+i).onblur = e => {
     const validation = validateUniquePlayerName(e.target.value, i, names);
     if (!validation.valid) {
+      // Khôi phục tên cũ nếu không hợp lệ
       e.target.value = names[i];
       banner(validation.message, '#e03131', 2000);
     } else {
@@ -816,6 +909,7 @@ addEventListener('resize',draw);
       e.target.value = names[i];
       info();
       send({t:'name', i, v: names[i]});
+      syncEloAndServer();
     }
   };
 });
@@ -967,7 +1061,7 @@ $('th').onclick=()=>th(document.documentElement.dataset.theme=='dark'?'light':'d
 let t0;try{t0=localStorage.getItem('sp-theme')}catch(e){}
 th(t0||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
 setInterval(clockTick,200);
-spots=[];lines=[];hist=[];turn=0;over=false;setMute(mute);setPh('lobby');info();draw();syncEloUI();
+spots=[];lines=[];hist=[];turn=0;over=false;setMute(mute);setPh('lobby');info();draw();syncEloAndServer();
 {const r=location.hash.match(/room=([A-Za-z0-9]{6})/);if(r){history.replaceState(null,'',location.href.split('#')[0]);$('net').open=true;joinRoom(r[1])}}
 {const m=location.hash.match(/join=([^&\s]+)/);if(m){history.replaceState(null,'',location.href.split('#')[0]);$('net').open=true;$('i').value=decodeURIComponent(m[1]);auto();$('net').scrollIntoView({block:'nearest'})}}
 </script></body></html>
