@@ -10,7 +10,27 @@ const io = new Server(server);
 app.use(express.static(__dirname));
 
 let waitingPlayer = null; // Lưu người chơi đang chờ tìm trận
-const players = new Map(); // Lưu thông tin Leaderboard & Bảy chọ (socket.id -> { id, name, elo, blockedUntil })
+const players = new Map(); // socket.id -> { id, name, elo, blockedUntil }
+const ALPH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+function genRoomCode() {
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+        code += ALPH[Math.floor(Math.random() * ALPH.length)];
+    }
+    return code;
+}
+
+function isNameTaken(name, excludeSocketId) {
+    const target = String(name || '').trim().toLowerCase();
+    if (!target) return false;
+    for (const [id, p] of players.entries()) {
+        if (id !== excludeSocketId && p.name.trim().toLowerCase() === target) {
+            return true;
+        }
+    }
+    return false;
+}
 
 function emitLeaderboard() {
     const list = Array.from(players.values())
@@ -27,14 +47,36 @@ function emitLeaderboard() {
 
 io.on('connection', (socket) => {
     console.log('Có người chơi kết nối:', socket.id);
-    players.set(socket.id, { id: socket.id, name: 'Player_' + socket.id.slice(0, 4), elo: 100, blockedUntil: 0 });
+    // Tạo tên mặc định duy nhất không trùng lặp
+    let defaultName = 'Player_' + socket.id.slice(0, 4);
+    while (isNameTaken(defaultName, socket.id)) {
+        defaultName = 'Player_' + Math.floor(1000 + Math.random() * 9000);
+    }
+
+    players.set(socket.id, { id: socket.id, name: defaultName, elo: 100, blockedUntil: 0 });
+    socket.emit('init_profile', { name: defaultName });
     emitLeaderboard();
 
-    // Cập nhật tên, điểm ELO hoặc trạng thái Bảy chọ lên Leaderboard
+    // Cập nhật tên (có kiểm tra trùng), điểm ELO hoặc trạng thái Bảy chọ lên Leaderboard
     socket.on('sync_player', (data) => {
         const p = players.get(socket.id);
         if (!p || !data) return;
-        if (data.name) p.name = String(data.name).slice(0, 20);
+
+        if (typeof data.name === 'string') {
+            const cleanName = data.name.trim().replace(/\s+/g, ' ').slice(0, 20);
+            if (cleanName.length >= 2 && cleanName.length <= 20) {
+                if (isNameTaken(cleanName, socket.id)) {
+                    socket.emit('name_rejected', {
+                        message: `Tên "${cleanName}" đã tồn tại! Vui lòng chọn tên khác.`,
+                        fallback: p.name
+                    });
+                } else if (p.name !== cleanName) {
+                    p.name = cleanName;
+                    socket.emit('name_accepted', { name: cleanName });
+                }
+            }
+        }
+
         if (typeof data.elo === 'number') p.elo = data.elo;
         if (typeof data.blockedUntil === 'number') p.blockedUntil = data.blockedUntil;
         emitLeaderboard();
@@ -66,16 +108,27 @@ io.on('connection', (socket) => {
             return;
         }
 
-        if (waitingPlayer && waitingPlayer.id !== socket.id) {
-            const roomId = 'room_' + Math.random().toString(36).substr(2, 9);
-            
-            socket.join(roomId);
-            waitingPlayer.join(roomId);
+        // Hủy tìm trận nếu đang chờ
+        if (data && data.cancel) {
+            if (waitingPlayer && waitingPlayer.id === socket.id) {
+                waitingPlayer = null;
+            }
+            socket.emit('search_cancelled');
+            return;
+        }
 
-            // Báo cho cả 2 máy tìm thấy đối thủ
-            io.to(roomId).emit('match_found', { roomId, p1: waitingPlayer.id, p2: socket.id });
-
+        if (waitingPlayer && waitingPlayer.connected && waitingPlayer.id !== socket.id) {
+            const roomCode = genRoomCode();
+            const roomId = 'room_' + roomCode;
+            const hostSocket = waitingPlayer;
             waitingPlayer = null;
+
+            socket.join(roomId);
+            hostSocket.join(roomId);
+
+            // Gửi mã phòng 6 ký tự chuẩn để 2 máy tự động kết nối WebRTC vào nhau
+            hostSocket.emit('match_found', { roomId, roomCode, role: 'host', p1: hostSocket.id, p2: socket.id });
+            socket.emit('match_found', { roomId, roomCode, role: 'join', p1: hostSocket.id, p2: socket.id });
         } else {
             waitingPlayer = socket;
             socket.emit('waiting', { message: 'Đang tìm kiếm đối thủ ngẫu nhiên...' });
@@ -83,7 +136,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        if (waitingPlayer === socket) {
+        if (waitingPlayer && waitingPlayer.id === socket.id) {
             waitingPlayer = null;
         }
         players.delete(socket.id);
