@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Sprouts — Premium Strategy & Progression</title>
+<title>Sprouts — Premium Strategy &amp; Progression</title>
 <style>
 :root{
   --desk:#e4ebf1;
@@ -14,12 +14,12 @@
   --mut:#5b6e7c;
   --p1:#e0316b;
   --p2:#1971c2;
-  --card:rgba(255,255,255,0.82);
+  --card:rgba(255,255,255,0.84);
   --card-solid:#ffffff;
   --line:rgba(201,214,222,0.85);
   --glass-blur:blur(14px);
   --sh:0 4px 20px rgba(22,36,47,0.06), 0 1px 3px rgba(22,36,47,0.04);
-  --sh-lg:0 16px 40px rgba(22,36,47,0.14);
+  --sh-lg:0 16px 40px rgba(22,36,47,0.16);
   --gold:#f59f00;
   --emerald:#2b8a3e;
   --f:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
@@ -34,7 +34,7 @@
   --mut:#8ca1b0;
   --p1:#ff6b9a;
   --p2:#5fb0ff;
-  --card:rgba(22,37,48,0.78);
+  --card:rgba(22,37,48,0.80);
   --card-solid:#162530;
   --line:rgba(46,74,92,0.75);
   --sh:0 6px 24px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.25);
@@ -69,9 +69,9 @@ header p{margin:0;color:var(--mut);font-size:.88rem}
 
 /* Buttons & Inputs */
 select,input[type=number],button{
-  font:inherit;font-weight:600;font-size:.88rem;color:var(--ink);
+  font:inherit;font-weight:600;font-size:.86rem;color:var(--ink);
   background:var(--card);backdrop-filter:var(--glass-blur);
-  border:1px solid var(--line);border-radius:10px;padding:7px 13px;
+  border:1px solid var(--line);border-radius:10px;padding:7px 12px;
   cursor:pointer;transition:transform .12s ease, border-color .15s, background .15s, box-shadow .15s, opacity .15s;
 }
 input[type=number]{width:5.2em;padding:6px 8px;cursor:text;text-align:center;-moz-appearance:textfield}
@@ -84,16 +84,30 @@ button:hover:not(:disabled),select:hover:not(:disabled){
 }
 button:active:not(:disabled){transform:translateY(0)}
 button.pri{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+button.btn-match{
+  background:linear-gradient(135deg, var(--p1), var(--p2));
+  color:#fff;border-color:transparent;
+  box-shadow:0 4px 14px color-mix(in srgb, var(--p1) 30%, transparent);
+}
+button.btn-match.searching{
+  background:linear-gradient(135deg, #f59f00, #e8590c);
+  animation:pulseBadge 1.4s infinite;
+}
 button.btn-stats{
   background:linear-gradient(135deg, color-mix(in srgb, var(--gold) 18%, var(--card)), color-mix(in srgb, var(--p1) 14%, var(--card)));
   border-color:color-mix(in srgb, var(--gold) 55%, var(--line));
+  display:inline-flex;align-items:center;gap:6px;
+}
+button.btn-lb{
+  background:linear-gradient(135deg, color-mix(in srgb, var(--p2) 16%, var(--card)), color-mix(in srgb, var(--emerald) 14%, var(--card)));
+  border-color:color-mix(in srgb, var(--p2) 50%, var(--line));
   display:inline-flex;align-items:center;gap:6px;
 }
 .spin-badge{
   background:var(--p1);color:#fff;font-size:.72rem;font-weight:800;
   padding:1px 6px;border-radius:99px;animation:pulseBadge 1.5s infinite;
 }
-@keyframes pulseBadge{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+@keyframes pulseBadge{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
 button:disabled{opacity:.42;cursor:default;transform:none}
 :focus-visible{outline:3px solid var(--p2);outline-offset:2px}
 
@@ -171,7 +185,7 @@ button:disabled{opacity:.42;cursor:default;transform:none}
 
 /* Status Bar */
 #st{
-  min-height:1.6em;padding:6px 12px;border-radius:10px;
+  min-height:1.6em;padding:7px 14px;border-radius:12px;
   background:var(--card);backdrop-filter:var(--glass-blur);
   border:1px solid var(--line);font-size:.92rem;
 }
@@ -235,7 +249,7 @@ textarea{
 .clk{font-variant-numeric:tabular-nums;font-weight:700;color:var(--mut);min-width:3.4ch;text-align:right;font-size:.9rem}
 .pl.on .clk{color:var(--ink)}.clk.low{color:#e03131!important;animation:bl 1s infinite}
 @keyframes bl{50%{opacity:.4}}
-@media(prefers-reduced-motion:reduce){.clk.low,.spin-badge{animation:none}.lr span{transition:none}}
+@media(prefers-reduced-motion:reduce){.clk.low,.spin-badge,.btn-match.searching{animation:none}.lr span{transition:none}}
 
 body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,body[data-ph=count] .bar,body[data-ph=play] #lobby,body[data-ph=play] #net{display:none}
 
@@ -247,14 +261,14 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 }
 .lob-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .lob h2{font:700 1.2rem/1 var(--f);margin:0}.lob p{margin:0;color:var(--mut);max-width:72ch;font-size:.92rem}.lob small{color:var(--mut);font-size:.82rem}
-.lrow{display:flex;flex-wrap:wrap;gap:18px;align-items:center}
+.lrow{display:flex;flex-wrap:wrap;gap:16px;align-items:center}
 .lrow label{display:flex;align-items:center;gap:8px;color:var(--ink);font-weight:500;font-size:.92rem}
 .rd{padding:4px 14px;font-size:.82rem;white-space:nowrap;border-radius:99px}.rd[hidden]{display:none}
 .rd.on{background:var(--c);color:#fff;border-color:var(--c);box-shadow:0 2px 10px color-mix(in srgb, var(--c) 35%, transparent)}
 
 #cd,#bn{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3}
 #cd{background:color-mix(in srgb,var(--card-solid) 92%,transparent);backdrop-filter:blur(6px);font:700 clamp(1.6rem,5vw,2.4rem) var(--f);letter-spacing:-.02em}
-#bn{z-index:4;font:700 clamp(1.1rem,3.5vw,1.65rem) var(--f);letter-spacing:-.01em;color:var(--c,var(--ink));text-shadow:0 2px 14px var(--paper), 0 0 2px var(--paper);text-align:center;padding:0 18px}
+#bn{z-index:4;font:700 clamp(1.05rem,3.2vw,1.55rem) var(--f);letter-spacing:-.01em;color:var(--c,var(--ink));text-shadow:0 2px 14px var(--paper), 0 0 2px var(--paper);text-align:center;padding:0 18px}
 #cd[hidden],#bn[hidden]{display:none}#cd b,#bn b{font-weight:inherit;animation:pop var(--d,1.1s) cubic-bezier(.2,.7,.2,1) both}
 @keyframes pop{0%{transform:translateY(10px) scale(.96);opacity:0}12%{transform:none;opacity:1}85%{opacity:1}100%{opacity:0}}
 @keyframes wn{50%{box-shadow:0 0 0 5px rgba(224,49,49,.55),var(--sh)}}
@@ -298,7 +312,7 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
   display:flex;flex-direction:column;gap:14px;animation:modalIn .25s ease both;
 }
 .quiz-header{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.quiz-title{font:700 1.1rem var(--f);margin:0;color:var(--ink)}
+.quiz-title{font:700 1.05rem var(--f);margin:0;color:var(--ink)}
 .quiz-progress{font-weight:700;font-size:.85rem;padding:3px 11px;border-radius:99px;background:color-mix(in srgb, var(--p2) 15%, transparent);color:var(--p2)}
 .quiz-question{font-size:1rem;font-weight:600;margin:0;line-height:1.45;color:var(--ink)}
 .quiz-options{display:flex;flex-direction:column;gap:9px}
@@ -349,8 +363,8 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
   font-weight:600;font-size:.92rem;
 }
 
-/* Profile & Stats Modal */
-.profile-box{max-width:680px}
+/* Profile, Stats & Leaderboard Modal */
+.profile-box{max-width:700px}
 .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);padding-bottom:8px;flex-wrap:wrap}
 .tab-btn{padding:6px 12px;border-radius:8px;font-size:.84rem;background:transparent;border:1px solid transparent}
 .tab-btn.active{background:var(--ink);color:var(--paper)}
@@ -361,7 +375,7 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 }
 .stat-card span{font-size:.76rem;color:var(--mut);font-weight:600}
 .stat-card strong{font-size:1.25rem;font-weight:800;color:var(--ink)}
-.inv-list,.hist-list{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto}
+.inv-list,.hist-list{display:flex;flex-direction:column;gap:8px;max-height:310px;overflow-y:auto}
 .inv-item,.hist-item{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:10px 14px;border-radius:12px;background:var(--paper);border:1px solid var(--line);
@@ -372,6 +386,13 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 .tag-status{font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:99px}
 .tag-active{background:color-mix(in srgb, var(--emerald) 18%, transparent);color:var(--emerald)}
 .tag-pending{background:color-mix(in srgb, var(--gold) 20%, transparent);color:var(--gold)}
+
+/* Leaderboard Table */
+.lb-table{width:100%;border-collapse:collapse;font-size:.86rem}
+.lb-table th,.lb-table td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--line)}
+.lb-table th{font-size:.76rem;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
+.lb-rank{font-weight:800;width:36px}
+.lb-row-me{background:color-mix(in srgb, var(--gold) 12%, transparent)}
 </style>
 </head>
 <body data-ph="lobby">
@@ -382,7 +403,8 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
     <p>Draw curves, grow new spots, outsmart your opponent.</p>
   </div>
   <div class="hdr-actions">
-    <button id="btn-profile" class="btn-stats" title="Xem chỉ số, kho Buff & Vòng quay">
+    <button id="btn-leaderboard" class="btn-lb" title="Bảng xếp hạng Elo &amp; Điểm">🏆 BXH</button>
+    <button id="btn-profile" class="btn-stats" title="Xem chỉ số, kho Buff &amp; Vòng quay">
       🎁 EFFECTS &amp; STATS <span id="hdr-spin-badge" class="spin-badge" hidden>0</span>
     </button>
     <button id="mu" aria-label="Toggle sound"></button>
@@ -441,7 +463,11 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 <section class="lob" id="lobby">
   <div class="lob-head">
     <h2>Lobby</h2>
-    <span class="conn-badge" id="conn-badge"><span class="conn-dot"></span><span id="conn-txt">Local Mode</span></span>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button id="btn-quick-match" class="btn-match">⚡ Tìm trận ngẫu nhiên</button>
+      <button id="btn-cancel-match" hidden>Hủy tìm</button>
+      <span class="conn-badge" id="conn-badge"><span class="conn-dot"></span><span id="conn-txt">Local Mode</span></span>
+    </div>
   </div>
   <p id="lm"></p>
   <div class="lrow">
@@ -487,9 +513,17 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 <p>Both players start in the lobby: choose the rules, then each press Ready. Once both are ready the match begins, a quick draw picks who moves first, and names and rules stay locked. The host can set the clock to any number of minutes (0 for no limit). Each player has a clock that runs only on their turn, and running out of time loses the game.</p>
 </details>
 
-<details id="net" open><summary>Play on two devices</summary>
-<p>Host presses <b>Create room</b> and shares the 6-character code (or link). The other player types the code and presses <b>Join room</b>. That's it: the two devices find each other and connect. The host is player 1 and chooses the rules; once connected you meet in the lobby and both press Ready.</p>
-<div class="row"><button id="rmk" class="pri">Create room</button><span>or</span><input id="rin" maxlength="40" placeholder="ROOM CODE" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Room code"><button id="rjn">Join room</button></div>
+<details id="net" open><summary>Play on two devices (Tìm trận / Tạo phòng / Nhập mã)</summary>
+<p>Nhấn <b>⚡ Tìm trận ngẫu nhiên</b> để ghép cặp tự động với người chơi khác qua server, hoặc tạo phòng riêng 6 ký tự bên dưới.</p>
+<div class="row">
+  <button id="btn-quick-match-2" class="btn-match">⚡ Tìm trận ngẫu nhiên</button>
+  <button id="btn-cancel-match-2" hidden>Hủy tìm</button>
+  <span>hoặc</span>
+  <button id="rmk" class="pri">Create room</button>
+  <span>or</span>
+  <input id="rin" maxlength="40" placeholder="ROOM CODE" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Room code">
+  <button id="rjn">Join room</button>
+</div>
 <div class="row"><label><input type="checkbox" id="stun"> Different networks (needs internet)</label></div>
 <div class="row" id="rbox" hidden><span>Room</span><input id="rcode" class="big" readonly size="7" aria-label="Your room code"><button id="rcpy">Copy code</button><button id="rlnk" hidden>Copy link</button><button id="rshr" hidden>Share</button></div>
 <p id="ns" role="status"></p>
@@ -523,11 +557,11 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
   </div>
 </div>
 
-<!-- Player Profile, Inventory & History Modal -->
+<!-- Player Profile, Inventory, History & Leaderboard Modal -->
 <div class="modal-overlay" id="profile-modal" hidden>
   <div class="modal-box profile-box">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-      <h3 style="margin:0;font-size:1.25rem">🎁 Effects, Progression &amp; Stats</h3>
+      <h3 style="margin:0;font-size:1.25rem">🎁 Effects, Progression &amp; Leaderboard</h3>
       <div style="display:flex;gap:8px;align-items:center">
         <select id="profile-seat-sel" aria-label="Chọn hồ sơ người chơi">
           <option value="0">Player 1 (Đỏ)</option>
@@ -540,6 +574,7 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
     <div class="tabs">
       <button class="tab-btn active" data-tab="stats">📊 Tổng quan</button>
       <button class="tab-btn" data-tab="inventory">🎒 Kho Buff</button>
+      <button class="tab-btn" data-tab="leaderboard">🏆 Bảng xếp hạng</button>
       <button class="tab-btn" data-tab="matches">📜 Lịch sử đấu</button>
       <button class="tab-btn" data-tab="wheelhist">🎡 Lịch sử quay</button>
     </div>
@@ -559,6 +594,32 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
       <div class="inv-list" id="profile-inv-list"></div>
     </div>
 
+    <div id="tab-leaderboard" class="tab-pane" hidden>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+        <span style="font-size:.82rem;color:var(--mut)">Xếp hạng theo Elo &amp; Điểm tích lũy (Local + Online Server)</span>
+        <select id="lb-sort-sel" aria-label="Sắp xếp BXH">
+          <option value="elo">Sắp xếp: Elo cao nhất</option>
+          <option value="score">Sắp xếp: Total Score</option>
+          <option value="streak">Sắp xếp: Best Streak</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="lb-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Người chơi</th>
+              <th>Elo</th>
+              <th>Score</th>
+              <th>Best Streak</th>
+              <th>Thắng/Trận</th>
+            </tr>
+          </thead>
+          <tbody id="lb-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div id="tab-matches" class="tab-pane" hidden>
       <div class="hist-list" id="profile-match-list"></div>
     </div>
@@ -569,6 +630,8 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
   </div>
 </div>
 
+<!-- Socket.IO Client (tự động nạp khi chạy qua Node server.js, an toàn nếu mở tĩnh) -->
+<script src="/socket.io/socket.io.js"></script>
 <script>
 const $=id=>document.getElementById(id),cv=$('c'),g=cv.getContext('2d');
 const W=900,H=600,R=11,D=2;cv.width=W*D;cv.height=H*D;
@@ -580,7 +643,8 @@ const names=['Player 1','Player 2'],ptr=new Map();
 let ph='lobby',rdy=[false,false],cdt=0,rz=false,rzA=false,ended=false,warned=false,lsec=-1,bt=0,fxr=false,mute=false,ac;
 const fx=[],trail=[];
 let currentMatchId = '';
-let remoteProfiles = [null, null]; // Dữ liệu đồng bộ hiển thị từ thiết bị đối phương
+let remoteProfiles = [null, null];
+let serverLeaderboard = [];
 
 try{mute=localStorage.getItem('sp-mute')=='1'}catch(e){}
 
@@ -599,7 +663,7 @@ const BUFF_CATALOG = [
 const PlayerProfileManager = (() => {
   const STORAGE_KEY = 'sprouts_progression_v1';
   const SCHEMA_VERSION = 1;
-  const MILESTONE_STEP = 2; // Mặc định mỗi 2 trận thắng liên tiếp nhận 1 lượt quay
+  const MILESTONE_STEP = 2;
 
   function createDefaultProfile(slotIdx) {
     return {
@@ -615,9 +679,9 @@ const PlayerProfileManager = (() => {
       totalMatches: 0,
       pendingSpins: 0,
       claimedStreakMilestones: [],
-      inventory: [], // { uid, buffId, status: 'pending'|'active'|'used', acquiredAt, appliedMatchId }
-      matchHistory: [], // { matchId, result, opponent, time, scoreBefore, scoreAfter, eloDelta, buffsUsed, quizMult }
-      wheelHistory: [], // { time, buffId, buffName, icon }
+      inventory: [],
+      matchHistory: [],
+      wheelHistory: [],
       processedMatches: []
     };
   }
@@ -660,7 +724,7 @@ const PlayerProfileManager = (() => {
         }
       }
     } catch (e) {
-      console.warn('Khôi phục dữ liệu tiến trình mặc định do lỗi đọc localStorage:', e);
+      console.warn('Khôi phục dữ liệu tiến trình mặc định:', e);
     }
     save();
   }
@@ -686,6 +750,7 @@ const PlayerProfileManager = (() => {
     save();
     refreshAllProfileUI();
     MultiplayerSyncManager.broadcastProfile(idx);
+    QuickMatchManager.syncStatsToServer(idx);
   }
 
   load();
@@ -723,7 +788,6 @@ const WinStreakManager = (() => {
     profile.totalLosses += 1;
     profile.totalMatches += 1;
     profile.currentStreak = 0;
-    // Reset danh sách mốc đã nhận cho chuỗi mới để lần thắng 2, 4, 6 tiếp theo lại được nhận thưởng
     profile.claimedStreakMilestones = [];
     return 0;
   }
@@ -751,7 +815,6 @@ const BuffManager = (() => {
     const nowStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString('vi-VN');
     let extraNote = '';
 
-    // Hiệu ứng kích hoạt ngay lập tức
     if (buffId === 'instant_15') {
       profile.totalScore += 15;
       extraNote = ' (+15 Score ngay lập tức!)';
@@ -763,7 +826,6 @@ const BuffManager = (() => {
       extraNote = ' (+10 Elo ngay lập tức & x1.5 điểm thắng trận tới!)';
     }
 
-    // Các buff có hiệu lực cho trận đấu tiếp theo được lưu vào inventory trạng thái 'pending'
     if (['double_score', 'elo_shield', 'time_bonus', 'king_aura'].includes(buffId)) {
       profile.inventory.push({
         uid: 'bf_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
@@ -785,10 +847,10 @@ const BuffManager = (() => {
     PlayerProfileManager.save();
     refreshAllProfileUI();
     MultiplayerSyncManager.broadcastProfile(slotIdx);
+    QuickMatchManager.syncStatsToServer(slotIdx);
     return { meta, extraNote };
   }
 
-  // Kích hoạt buff đầu trận đấu (chuyển pending -> active cho trận hiện tại)
   function activateBuffsForMatch(slotIdx, matchId, hasTimer) {
     const profile = PlayerProfileManager.get(slotIdx);
     let timeBonusSeconds = 0;
@@ -800,10 +862,10 @@ const BuffManager = (() => {
         continue;
       }
       if (item.status !== 'pending') continue;
-      if (activatedTypes.has(item.buffId)) continue; // Mỗi loại tối đa 1 buff/trận
+      if (activatedTypes.has(item.buffId)) continue;
 
       if (item.buffId === 'time_bonus') {
-        if (!hasTimer) continue; // Giữ lại trong kho nếu trận không có timer
+        if (!hasTimer) continue;
         timeBonusSeconds += 30;
       }
       item.status = 'active';
@@ -816,29 +878,23 @@ const BuffManager = (() => {
     return { timeBonusSeconds, activatedTypes: [...activatedTypes] };
   }
 
-  // Lấy các buff đang active cho matchId hiện tại
   function getActiveBuffs(slotIdx, matchId) {
     const profile = PlayerProfileManager.get(slotIdx);
     return profile.inventory.filter(it => it.status === 'active' && it.appliedMatchId === matchId);
   }
 
-  // Tiêu thụ buff sau khi trận đấu hoàn tất
   function consumeActiveBuffs(slotIdx, matchId, isWinner) {
     const profile = PlayerProfileManager.get(slotIdx);
     const usedNames = [];
 
     for (const item of profile.inventory) {
       if (item.status === 'active' && item.appliedMatchId === matchId) {
-        // Double Score & King Aura chỉ tiêu thụ khi thắng (hoặc tiêu thụ khi trận kết thúc hợp lệ; bảo toàn nếu thua để công bằng hoặc tiêu thụ theo quy tắc trận tiếp theo)
-        // Theo đặc tả: "Buff chỉ được tiêu thụ khi thực sự áp dụng vào một trận đấu hợp lệ"
         if ((item.buffId === 'double_score' || item.buffId === 'king_aura') && !isWinner) {
-          // Hoàn lại pending nếu thua để không lãng phí hệ số điểm thắng
           item.status = 'pending';
           item.appliedMatchId = null;
           continue;
         }
         if (item.buffId === 'elo_shield' && isWinner) {
-          // Elo shield chỉ kích hoạt khi thua; nếu thắng giữ lại cho lần thua sau
           item.status = 'pending';
           item.appliedMatchId = null;
           continue;
@@ -849,7 +905,6 @@ const BuffManager = (() => {
       }
     }
 
-    // Dọn dẹp các item đã used khỏi danh sách active/pending (giữ tối đa 20 lịch sử used gần nhất)
     const activeOrPending = profile.inventory.filter(it => it.status !== 'used');
     const usedRecent = profile.inventory.filter(it => it.status === 'used').slice(-20);
     profile.inventory = [...activeOrPending, ...usedRecent];
@@ -918,7 +973,6 @@ const LuckyWheelManager = (() => {
       svg.appendChild(grp);
     });
 
-    // Đèn LED trang trí quanh viền
     for (let k = 0; k < 18; k++) {
       const ang = (k * 20) * Math.PI / 180;
       const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -933,7 +987,7 @@ const LuckyWheelManager = (() => {
   }
 
   function open(slotIdx, isTest = false) {
-    if (!$('quiz-modal').hidden) return; // Không đè lên Quiz Modal
+    if (!$('quiz-modal').hidden) return;
     activeSlot = slotIdx === 1 ? 1 : 0;
     testMode = isTest;
     buildWheelSVG();
@@ -977,13 +1031,13 @@ const LuckyWheelManager = (() => {
       $('wheel-spins-left').textContent = `Lượt quay: ${prof.pendingSpins}`;
     }
 
-    // 1. Xác định kết quả trước bằng logic JavaScript thuần (Deterministic Selection)
+    // Xác định kết quả trước bằng logic JavaScript thuần
     const N = BUFF_CATALOG.length;
     const chosenIndex = Math.floor(Math.random() * N);
     const chosenBuff = BUFF_CATALOG[chosenIndex];
 
-    // 2. Tính góc dừng chính xác để ô chosenIndex nằm ngay dưới kim chỉ định ở đỉnh (0 độ)
-    const sectorDeg = 360 / N; // 60 độ
+    // Tính góc dừng chính xác để ô chosenIndex nằm ngay dưới kim chỉ định ở đỉnh
+    const sectorDeg = 360 / N;
     const targetSectorCenter = chosenIndex * sectorDeg + sectorDeg / 2;
     const desiredFinalAngle = (360 - targetSectorCenter) % 360;
     const currentMod = ((currentRotation % 360) + 360) % 360;
@@ -1009,7 +1063,6 @@ const LuckyWheelManager = (() => {
       const svg = $('wheel-svg');
       if (svg) svg.style.transform = `rotate(${currentRotation.toFixed(2)}deg)`;
 
-      // Phát âm thanh tick khi kim đi qua ranh giới từng ô
       const normDeg = ((currentRotation % 360) + 360) % 360;
       const curSec = Math.floor(normDeg / sectorDeg);
       if (curSec !== lastTickSector) {
@@ -1056,17 +1109,16 @@ const MatchScoreManager = (() => {
     if (isWinner) {
       return Math.max(5, Math.round(K * (1 - expected)));
     } else {
-      if (hasEloShield) return 0; // Elo Shield chặn trừ Elo khi thua
+      if (hasEloShield) return 0;
       return -Math.max(5, Math.round(K * (1 - expected)));
     }
   }
 
-  // Xử lý hoàn tất trận đấu cho 1 slot người chơi cụ thể (Idempotent theo matchId)
   function processSlotOutcome(slotIdx, matchId, isWinner, quizStreakAchieved) {
     const profile = PlayerProfileManager.get(slotIdx);
     const idempKey = `${matchId}_s${slotIdx}`;
     if (profile.processedMatches.includes(idempKey)) {
-      return null; // Chống cộng điểm trùng lặp
+      return null;
     }
     profile.processedMatches.push(idempKey);
     if (profile.processedMatches.length > 100) profile.processedMatches.shift();
@@ -1090,7 +1142,6 @@ const MatchScoreManager = (() => {
       deltaScore = Math.round(BASE_MATCH_SCORE * mult * 10) / 10;
       multLabel = `${mult}x`;
     } else {
-      // Giữ nguyên cơ chế gốc: đạt chuỗi 3 câu Quiz giảm phạt còn 0.5đ; không đạt trừ 2đ
       deltaScore = quizStreakAchieved ? -0.5 : -2;
       multLabel = quizStreakAchieved ? 'Cứu trợ (-0.5đ)' : 'Phạt chuẩn (-2đ)';
     }
@@ -1129,6 +1180,8 @@ const MatchScoreManager = (() => {
     if (profile.matchHistory.length > 50) profile.matchHistory.length = 50;
 
     PlayerProfileManager.save();
+    QuickMatchManager.syncStatsToServer(slotIdx);
+
     return {
       slotIdx,
       isWinner,
@@ -1147,7 +1200,7 @@ const MatchScoreManager = (() => {
 })();
 
 // ============================================================================
-// MODULE 6: MULTIPLAYER SYNC MANAGER
+// MODULE 6: MULTIPLAYER SYNC & SOCKET.IO QUICK MATCH MANAGER
 // ============================================================================
 const MultiplayerSyncManager = (() => {
   function broadcastProfile(slotIdx) {
@@ -1179,8 +1232,147 @@ const MultiplayerSyncManager = (() => {
   return { broadcastProfile, handleRemoteProfile };
 })();
 
+const QuickMatchManager = (() => {
+  let socket = null;
+  let searching = false;
+  let activeQuickRoom = '';
+
+  function init() {
+    if (typeof window.io !== 'function') return;
+    try {
+      socket = window.io();
+
+      socket.on('connect', () => {
+        syncStatsToServer(0);
+        syncStatsToServer(1);
+      });
+
+      socket.on('leaderboard_update', (list) => {
+        if (Array.isArray(list)) {
+          serverLeaderboard = list;
+          if (!$('profile-modal').hidden) renderLeaderboard();
+        }
+      });
+
+      socket.on('waiting', (data) => {
+        setSearchingUI(true);
+        const msg = (data && data.message) || 'Đang tìm kiếm đối thủ ngẫu nhiên...';
+        ns(msg);
+        banner('🔍 ' + msg, css('--p2'), 2500);
+      });
+
+      socket.on('match_cancelled', () => {
+        setSearchingUI(false);
+        ns('Đã hủy tìm trận ngẫu nhiên.');
+      });
+
+      socket.on('error_message', (data) => {
+        setSearchingUI(false);
+        ns((data && data.message) || 'Lỗi ghép trận.');
+      });
+
+      socket.on('match_found', async ({ roomId, p1, p2 }) => {
+        setSearchingUI(false);
+        activeQuickRoom = roomId;
+        closeRel();
+        hideRoom();
+        room = '';
+
+        const isHost = socket.id === p1;
+        ns(isHost ? 'Đã tìm thấy đối thủ! Đang kết nối (Player 1)...' : 'Đã tìm thấy đối thủ! Đang kết nối (Player 2)...');
+
+        if (isHost) {
+          mk();
+          me = 0;
+          wire(pc2.createDataChannel('g'));
+          await pc2.setLocalDescription(await pc2.createOffer());
+          await ice();
+          const offerCode = await code();
+          socket.emit('rtc_signal', { roomId, payload: { type: 'offer', code: offerCode } });
+        } else {
+          setupJoin();
+        }
+      });
+
+      socket.on('rtc_signal', async ({ payload }) => {
+        if (!payload || !activeQuickRoom) return;
+        try {
+          if (payload.type === 'offer' && me === 1) {
+            const o = await decSafe(payload.code);
+            await pc2.setRemoteDescription({ type: o.type, sdp: o.sdp });
+            await pc2.setLocalDescription(await pc2.createAnswer());
+            await ice();
+            const answerCode = await code();
+            socket.emit('rtc_signal', { roomId: activeQuickRoom, payload: { type: 'answer', code: answerCode } });
+          } else if (payload.type === 'answer' && me === 0) {
+            const o = await decSafe(payload.code);
+            await pc2.setRemoteDescription({ type: o.type, sdp: o.sdp });
+          }
+        } catch (err) {
+          console.error('Lỗi trao đổi tín hiệu WebRTC qua Socket.IO:', err);
+          ns('Kết nối P2P gặp sự cố, vui lòng thử tìm lại hoặc dùng mã phòng.');
+        }
+      });
+    } catch (e) {
+      console.warn('Socket.IO không khả dụng:', e);
+    }
+  }
+
+  function setSearchingUI(val) {
+    searching = val;
+    ['btn-quick-match', 'btn-quick-match-2'].forEach(id => {
+      const b = $(id);
+      if (!b) return;
+      b.classList.toggle('searching', val);
+      b.textContent = val ? '⏳ Đang tìm đối thủ...' : '⚡ Tìm trận ngẫu nhiên';
+      b.disabled = val || seat >= 0;
+    });
+    ['btn-cancel-match', 'btn-cancel-match-2'].forEach(id => {
+      const b = $(id);
+      if (b) b.hidden = !val;
+    });
+  }
+
+  function startSearch() {
+    if (seat >= 0) {
+      ns('Bạn đang trong phòng trực tuyến rồi.');
+      return;
+    }
+    if (!socket || !socket.connected) {
+      ns('Chưa kết nối được tới máy chủ ghép trận (hãy chạy node server.js hoặc dùng Create/Join room bên dưới).');
+      $('net').open = true;
+      return;
+    }
+    const nodes = parseInt($('n').value, 10) || 5;
+    socket.emit('find_match', { nodes });
+  }
+
+  function cancelSearch() {
+    if (socket && socket.connected) {
+      socket.emit('cancel_match');
+    }
+    setSearchingUI(false);
+  }
+
+  function syncStatsToServer(slotIdx) {
+    if (!socket || !socket.connected) return;
+    const p = PlayerProfileManager.get(slotIdx);
+    socket.emit('submit_stats', {
+      playerId: p.playerId,
+      name: names[slotIdx],
+      elo: p.elo,
+      totalScore: p.totalScore,
+      bestStreak: p.bestStreak,
+      totalWins: p.totalWins,
+      totalMatches: p.totalMatches
+    });
+  }
+
+  return { init, startSearch, cancelSearch, syncStatsToServer, setSearchingUI };
+})();
+
 // ============================================================================
-// UNIQUE PLAYER NAME & VALIDATION SYSTEM (Giữ nguyên hành vi gốc)
+// UNIQUE PLAYER NAME & VALIDATION SYSTEM
 // ============================================================================
 function normalizePlayerName(name) {
   if (typeof name !== 'string') return '';
@@ -1234,8 +1426,6 @@ loadQuizData();
 
 function startQuizSession(winnerSlot) {
   activeQuizWinnerSlot = winnerSlot;
-  // Trên chế độ online (seat >= 0), mỗi thiết bị thi Quiz cho chính người chơi của thiết bị đó.
-  // Trên chế độ local (seat < 0), người thắng trận sẽ thực hiện thử thách Quiz nhân thưởng.
   activeQuizTargetSlot = seat >= 0 ? seat : winnerSlot;
   const isTargetWinner = activeQuizTargetSlot === winnerSlot;
 
@@ -1346,12 +1536,10 @@ function finalizeMatchScore(winnerSlot, streakAchieved) {
   let primaryResult = null;
 
   if (seat < 0) {
-    // Local mode: cập nhật tiến trình cho cả Player 1 và Player 2
     const winRes = MatchScoreManager.processSlotOutcome(winnerSlot, currentMatchId, true, streakAchieved);
     const lossRes = MatchScoreManager.processSlotOutcome(loserSlot, currentMatchId, false, false);
     primaryResult = winRes || lossRes;
   } else {
-    // Online mode: mỗi thiết bị chỉ cập nhật hồ sơ của chính mình
     const amIWinner = seat === winnerSlot;
     primaryResult = MatchScoreManager.processSlotOutcome(seat, currentMatchId, amIWinner, streakAchieved);
     MultiplayerSyncManager.broadcastProfile(seat);
@@ -1365,7 +1553,6 @@ function finalizeMatchScore(winnerSlot, streakAchieved) {
     const msg = `${primaryResult.isWinner ? '🏆' : '🛡️'} ${names[primaryResult.slotIdx]}: ${sign}${primaryResult.deltaScore}đ (${primaryResult.multLabel}) | Elo ${eloSign}${primaryResult.eloDelta} | Streak: ${primaryResult.currentStreak}`;
     banner(msg, pc(primaryResult.slotIdx), 3600);
 
-    // Nếu đạt milestone và có lượt quay mới, mở Lucky Effect Wheel sau khi banner hiển thị xong
     if (primaryResult.pendingSpins > 0 && primaryResult.isWinner) {
       setTimeout(() => {
         if ($('quiz-modal').hidden) {
@@ -1377,7 +1564,7 @@ function finalizeMatchScore(winnerSlot, streakAchieved) {
 }
 
 // ============================================================================
-// UI RENDERING FOR PLAYER CARDS & PROFILE MODAL
+// UI RENDERING FOR PLAYER CARDS, LEADERBOARD & PROFILE MODAL
 // ============================================================================
 function refreshAllProfileUI() {
   const step = PlayerProfileManager.MILESTONE_STEP;
@@ -1414,7 +1601,6 @@ function refreshAllProfileUI() {
     });
   });
 
-  // Cập nhật badge lượt quay trên nút header
   const totalSpins = seat >= 0
     ? PlayerProfileManager.get(seat).pendingSpins
     : (PlayerProfileManager.get(0).pendingSpins + PlayerProfileManager.get(1).pendingSpins);
@@ -1425,6 +1611,72 @@ function refreshAllProfileUI() {
   if (!$('profile-modal').hidden) {
     renderProfileModal();
   }
+}
+
+function renderLeaderboard() {
+  const tbody = $('lb-tbody');
+  if (!tbody) return;
+  const sortBy = $('lb-sort-sel').value || 'elo';
+
+  // Hợp nhất hồ sơ local (P1, P2), đối thủ đang kết nối, và danh sách từ server
+  const mergedMap = new Map();
+
+  [0, 1].forEach(idx => {
+    const p = PlayerProfileManager.get(idx);
+    mergedMap.set(p.playerId, {
+      playerId: p.playerId,
+      name: names[idx],
+      elo: p.elo,
+      totalScore: p.totalScore,
+      bestStreak: p.bestStreak,
+      totalWins: p.totalWins,
+      totalMatches: p.totalMatches,
+      isLocal: true
+    });
+  });
+
+  if (seat >= 0) {
+    const opp = seat ^ 1;
+    if (remoteProfiles[opp]) {
+      const rp = remoteProfiles[opp];
+      mergedMap.set('remote_opp_' + opp, {
+        playerId: 'remote_opp_' + opp,
+        name: names[opp] + ' (Đối thủ)',
+        elo: rp.elo || 1000,
+        totalScore: rp.totalScore || 0,
+        bestStreak: rp.bestStreak || 0,
+        totalWins: '-',
+        totalMatches: '-',
+        isLocal: false
+      });
+    }
+  }
+
+  serverLeaderboard.forEach(entry => {
+    if (!mergedMap.has(entry.playerId)) {
+      mergedMap.set(entry.playerId, { ...entry, isLocal: false });
+    }
+  });
+
+  const rows = Array.from(mergedMap.values()).sort((a, b) => {
+    if (sortBy === 'score') return b.totalScore - a.totalScore || b.elo - a.elo;
+    if (sortBy === 'streak') return b.bestStreak - a.bestStreak || b.elo - a.elo;
+    return b.elo - a.elo || b.totalScore - a.totalScore;
+  });
+
+  const medals = ['🥇', '🥈', '🥉'];
+  tbody.innerHTML = rows.map((r, idx) => {
+    const rankStr = medals[idx] || `#${idx + 1}`;
+    const recordStr = r.totalMatches === '-' ? 'Online' : `${r.totalWins}/${r.totalMatches}`;
+    return `<tr class="${r.isLocal ? 'lb-row-me' : ''}">
+      <td class="lb-rank">${rankStr}</td>
+      <td><b>${r.name}</b> ${r.isLocal ? '<small style="color:var(--mut)">(Bạn)</small>' : ''}</td>
+      <td>🏅 <b>${r.elo}</b></td>
+      <td>⭐ ${r.totalScore}</td>
+      <td>🔥 ${r.bestStreak}</td>
+      <td>${recordStr}</td>
+    </tr>`;
+  }).join('');
 }
 
 function renderProfileModal() {
@@ -1444,7 +1696,6 @@ function renderProfileModal() {
     <div class="stat-card"><span>Best Streak</span><strong>👑 ${p.bestStreak}</strong></div>
   `;
 
-  // Kho Buff
   const invEl = $('profile-inv-list');
   const usable = p.inventory.filter(it => it.status === 'active' || it.status === 'pending');
   if (usable.length === 0) {
@@ -1463,7 +1714,8 @@ function renderProfileModal() {
     }).join('');
   }
 
-  // Lịch sử đấu
+  renderLeaderboard();
+
   const mEl = $('profile-match-list');
   if (p.matchHistory.length === 0) {
     mEl.innerHTML = '<p style="color:var(--mut);text-align:center">Chưa có lịch sử trận đấu nào.</p>';
@@ -1481,7 +1733,6 @@ function renderProfileModal() {
     }).join('');
   }
 
-  // Lịch sử vòng quay
   const wEl = $('profile-wheel-list');
   if (p.wheelHistory.length === 0) {
     wEl.innerHTML = '<p style="color:var(--mut);text-align:center">Chưa có lượt quay Lucky Wheel nào.</p>';
@@ -1495,8 +1746,21 @@ function renderProfileModal() {
   }
 }
 
+function switchProfileTab(tabName) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
+  document.querySelectorAll('.tab-pane').forEach(p => p.hidden = p.id !== 'tab-' + tabName);
+}
+
+function openModalWithTab(tabName) {
+  if (seat >= 0) $('profile-seat-sel').value = String(seat);
+  $('profile-seat-sel').disabled = seat >= 0;
+  switchProfileTab(tabName);
+  renderProfileModal();
+  $('profile-modal').hidden = false;
+}
+
 // ============================================================================
-// SOUND ENGINE (Web Audio API — Giữ nguyên & mở rộng an toàn)
+// SOUND ENGINE (Web Audio API)
 // ============================================================================
 function tone(f,d=.12,ty='sine',v=.15,at=0,f2){if(mute)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state=='suspended')ac.resume();const t=ac.currentTime+at,o=ac.createOscillator(),a=ac.createGain();o.type=ty;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);a.gain.setValueAtTime(.0001,t);a.gain.exponentialRampToValueAtTime(v,t+.01);a.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(a);a.connect(ac.destination);o.start(t);o.stop(t+d+.05)}catch(e){}}
 const SND={
@@ -1512,7 +1776,7 @@ const snd=(k,a)=>SND[k]&&SND[k](a);
 function setMute(v){mute=v;try{localStorage.setItem('sp-mute',v?'1':'0')}catch(e){}$('mu').textContent=v?'🔇 Sound off':'🔊 Sound on'}
 
 // ============================================================================
-// VISUAL EFFECTS & PARTICLE SYSTEM (Tôn trọng prefers-reduced-motion)
+// VISUAL EFFECTS & PARTICLE SYSTEM
 // ============================================================================
 function banner(t,c,ms=1100){const e=$('bn'),b=document.createElement('b');b.textContent=t;e.style.setProperty('--c',c||'');e.style.setProperty('--d',ms+'ms');e.replaceChildren(b);e.hidden=false;clearTimeout(bt);bt=setTimeout(()=>e.hidden=true,ms)}
 
@@ -1522,7 +1786,7 @@ function burst(x,y,col,n=14,v=2.5,life=700,ring=1){
   if(ring)fx.push({x,y,col,t,life,ring:1});
   const count = Math.min(n, 36);
   for(let i=0;i<count;i++){
-    if (fx.length > 260) fx.shift(); // Giới hạn bộ nhớ particle
+    if (fx.length > 260) fx.shift();
     const a=Math.random()*6.283,s=v*(.4+Math.random());
     fx.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,col,t,life:life*(.6+Math.random()*.6)});
   }
@@ -1558,8 +1822,7 @@ function endFx(){
   const w=turn^1,col=pc(w),mine=seat<0||seat==w;lt++;if(tout)snd('buzz');setTimeout(()=>snd(mine?'win':'lose'),tout?500:0);
   banner((rz?'Resigned! ':tout?'Time is up! ':'')+names[w]+' wins!',col,3200);
   for(let k=0;k<7;k++)setTimeout(()=>{const q=wld([Math.random()*W,Math.random()*H]);burst(q[0],q[1],col,22,3.4,1100,1)},k*160);
-  
-  // Kích hoạt luồng Quiz & Tính điểm sau trận đấu
+
   setTimeout(() => {
     scoreFinalized = false;
     startQuizSession(w);
@@ -1581,11 +1844,12 @@ function lobbyUI(){
   if (seat >= 0) {
     cb.classList.add('online');
     ct.textContent = `Online · ${names[seat]} (${seat ? 'P2' : 'P1'})`;
+    QuickMatchManager.setSearchingUI(false);
   } else {
     cb.classList.remove('online');
     ct.textContent = 'Local 2-Player';
   }
-  $('lm').textContent=seat<0?'Both players press Ready to start. Playing on two devices? Open “Play on two devices” below.':'Online: you are '+names[seat]+' ('+(seat?'blue':'red')+'). '+(seat?'The host chooses the rules.':'You choose the rules.');
+  $('lm').textContent=seat<0?'Both players press Ready to start, or click ⚡ Tìm trận ngẫu nhiên to match online.':'Online: you are '+names[seat]+' ('+(seat?'blue':'red')+'). '+(seat?'The host chooses the rules.':'You choose the rules.');
   refreshAllProfileUI();
 }
 function setRdy(i,v){rdy[i]=v;snd(v?'ready':'unready');lobbyUI();info();if(ph=='lobby'&&rdy[0]&&rdy[1]&&seat!=1){send({t:'count'});runCount()}}
@@ -1620,7 +1884,6 @@ function newGame(){
   lim=Math.round(Math.max(0,+$('tm').value||0)*60000);
   clk=[lim,lim];
 
-  // Kích hoạt Buffs cho trận mới & áp dụng Time Bonus nếu có giới hạn thời gian
   [0, 1].forEach(slotIdx => {
     if (seat < 0 || seat === slotIdx) {
       const act = BuffManager.activateBuffsForMatch(slotIdx, currentMatchId, lim > 0);
@@ -1807,7 +2070,6 @@ function draw(){
 
   const path=p=>{g.beginPath();p.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.stroke()};
 
-  // Vẽ đường nối kèm Subtle Glow & Highlight khi mới hoàn thành
   for(const l of lines){
     const col = pc(l.c);
     const isFresh = l.born && (now - l.born < 450) && !REDUCED_MOTION;
@@ -1822,7 +2084,6 @@ function draw(){
     g.restore();
   }
 
-  // Vẽ nét đang kéo
   if(cur){
     g.save();
     g.lineWidth = 3.5;
@@ -1833,7 +2094,6 @@ function draw(){
     if(cur.q){g.lineWidth=3;g.strokeStyle=cur.bad?'#e03131':pc(turn);g.setLineDash([2,7]);path([cur.path[cur.path.length-1],cur.q]);g.setLineDash([])}
   }
 
-  // Cursor Trail Particles
   if (trail.length) {
     for (const tr of trail) {
       const k = Math.min(1, (now - tr.t) / tr.life);
@@ -1846,7 +2106,6 @@ function draw(){
     g.globalAlpha = 1;
   }
 
-  // Burst & Ring Particles
   if (fx.length) {
     for(const f of fx){
       const k=Math.min(1,(now-f.t)/f.life);
@@ -1860,7 +2119,6 @@ function draw(){
     g.globalAlpha=1;
   }
 
-  // Vẽ các Spot (Nodes)
   g.font='700 12px Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
   g.textAlign='center';g.textBaseline='middle';
   spots.forEach((s,i)=>{
@@ -1927,6 +2185,7 @@ addEventListener('resize',draw);
       names[i] = validation.normalized;
       info();
       send({t:'name', i, v: names[i]});
+      QuickMatchManager.syncStatsToServer(i);
     }
   };
   $('p'+i).onblur = e => {
@@ -1939,27 +2198,25 @@ addEventListener('resize',draw);
       e.target.value = names[i];
       info();
       send({t:'name', i, v: names[i]});
+      QuickMatchManager.syncStatsToServer(i);
     }
   };
 });
 
-// Profile & Wheel UI Bindings
-$('btn-profile').onclick = () => {
-  if (seat >= 0) $('profile-seat-sel').value = String(seat);
-  $('profile-seat-sel').disabled = seat >= 0;
-  renderProfileModal();
-  $('profile-modal').hidden = false;
-};
+// Quick Match & Leaderboard & Profile UI Bindings
+$('btn-quick-match').onclick = () => QuickMatchManager.startSearch();
+$('btn-quick-match-2').onclick = () => QuickMatchManager.startSearch();
+$('btn-cancel-match').onclick = () => QuickMatchManager.cancelSearch();
+$('btn-cancel-match-2').onclick = () => QuickMatchManager.cancelSearch();
+
+$('btn-leaderboard').onclick = () => openModalWithTab('leaderboard');
+$('btn-profile').onclick = () => openModalWithTab('stats');
 $('btn-close-profile').onclick = () => { $('profile-modal').hidden = true; };
 $('profile-seat-sel').onchange = renderProfileModal;
+$('lb-sort-sel').onchange = renderLeaderboard;
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const target = btn.dataset.tab;
-    document.querySelectorAll('.tab-pane').forEach(p => p.hidden = p.id !== 'tab-' + target);
-  };
+  btn.onclick = () => switchProfileTab(btn.dataset.tab);
 });
 
 $('btn-open-wheel-real').onclick = () => {
@@ -1983,7 +2240,7 @@ $('btn-spin-wheel').onclick = () => LuckyWheelManager.spin();
 $('btn-close-wheel').onclick = () => LuckyWheelManager.close();
 
 // ============================================================================
-// MULTIPLAYER: WEBRTC & NTFY.SH RELAY (Bảo toàn giao thức & bổ sung pstats)
+// MULTIPLAYER: WEBRTC & NTFY.SH RELAY
 // ============================================================================
 const pack=()=>JSON.stringify({spots,lines,turn,over,tout,clk,lim,n:parseInt($('n').value,10),matchId:currentMatchId});
 const send=o=>{if(dc&&dc.readyState=='open')dc.send(JSON.stringify(o))};
@@ -2063,7 +2320,6 @@ function recv(e){
       $('tm').value=lim/60000;hist=[];cur=null;last=performance.now();
       if(m.lot){
         clearTimeout(cdt);$('cd').hidden=true;rz=ended=warned=false;lsec=-1;cam={x:0,y:0,z:1};setPh('play');
-        // Kích hoạt Buffs trên thiết bị Guest (seat 1) khi bắt đầu trận từ Host
         if (seat === 1 && currentMatchId) {
           const act = BuffManager.activateBuffsForMatch(1, currentMatchId, lim > 0);
           if (lim > 0 && act.timeBonusSeconds > 0) clk[1] += act.timeBonusSeconds * 1000;
@@ -2158,7 +2414,7 @@ $('th').onclick=()=>th(document.documentElement.dataset.theme=='dark'?'light':'d
 let t0;try{t0=localStorage.getItem('sp-theme')}catch(e){}
 th(t0||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
 setInterval(clockTick,200);
-spots=[];lines=[];hist=[];turn=0;over=false;setMute(mute);setPh('lobby');refreshAllProfileUI();info();draw();
+spots=[];lines=[];hist=[];turn=0;over=false;setMute(mute);setPh('lobby');QuickMatchManager.init();refreshAllProfileUI();info();draw();
 {const r=location.hash.match(/room=([A-Za-z0-9]{6})/);if(r){history.replaceState(null,'',location.href.split('#')[0]);$('net').open=true;joinRoom(r[1])}}
 {const m=location.hash.match(/join=([^&\s]+)/);if(m){history.replaceState(null,'',location.href.split('#')[0]);$('net').open=true;$('i').value=decodeURIComponent(m[1]);auto();$('net').scrollIntoView({block:'nearest'})}}
 </script>
