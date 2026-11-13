@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sprouts</title>
@@ -303,7 +303,7 @@ let shieldActive = false;     // Khiên bảo hộ (30 ELO -> miễn trừ ELO k
 let hintPath = null;          // Thấu thị (25 ELO -> gợi ý 1 nước đi hợp lệ)
 let latestLeaderboard = [];
 let isSearchingMatch = false;
-let autoStartMatch = false;   // Cờ tự động vào trận luôn không cần bấm Ready khi ghép tự động
+let autoStartMatch = false;
 
 function applyMyNameLocally(validName) {
   myCustomName = validName;
@@ -478,7 +478,7 @@ $('btn-shield').onclick = () => {
   syncEloAndServer();
 };
 
-// Nút Tìm Trận Ngẫu Nhiên (Ghép xong tự động vào trận luôn không cần bấm Ready)
+// Nút Tìm Trận Ngẫu Nhiên
 function setSearchingUI(searching) {
   isSearchingMatch = searching;
   const btn = $('btn-find-match');
@@ -529,7 +529,7 @@ if (socket) {
   });
   socket.on('match_found', async d => {
     setSearchingUI(false);
-    autoStartMatch = true; // Đánh dấu tự động vào trận luôn không cần bấm Ready
+    autoStartMatch = true;
     snd('chime');
     $('net').open = true;
     $('match-sub').textContent = `🎉 Đã ghép trận! Đang vào bàn đấu ngay...`;
@@ -576,7 +576,7 @@ function validateUniquePlayerName(name, playerId, currentNames) {
   return { valid: true, normalized: norm };
 }
 
-// ---- QUIZ SYSTEM & 100 QUESTIONS (TẢI TỪ quizz.json) ----
+// ---- QUIZ SYSTEM & 100 QUESTIONS (TỰ ĐỘNG ĐỌC questions.json) ----
 let quizBank = [];
 let quizSessionActive = false;
 let consecutiveCorrect = 0;
@@ -588,22 +588,29 @@ let baseGameScore = 10; // Điểm gốc mặc định mỗi trận
 async function loadQuizData() {
   for (const file of ['questions.json', 'quizz.json', 'quiz-data.json']) {
     try {
-      const res = await fetch(file);
+      const res = await fetch(file + '?v=' + Date.now());
       if (!res.ok) continue;
       const data = await res.json();
-      if (data && Array.isArray(data.questions) && data.questions.length > 0) {
-        quizBank = data.questions;
-        console.log(`Đã tải ${quizBank.length} câu hỏi từ ${file}`);
-        return;
+      const list = Array.isArray(data) ? data : (data && Array.isArray(data.questions) ? data.questions : []);
+      if (list.length > 0) {
+        quizBank = list;
+        console.log(`Đã tải thành công ${quizBank.length} câu hỏi từ ${file}`);
+        return true;
       }
-    } catch(e) {}
+    } catch(e) {
+      console.warn('Lỗi đọc file ' + file, e);
+    }
   }
-  console.error('Không thể tải ngân hàng câu hỏi quizz.json');
+  return false;
 }
 loadQuizData();
 
-function startQuizSession(isWinner) {
+async function startQuizSession(isWinner) {
   if (quizBank.length === 0) {
+    await loadQuizData();
+  }
+  if (quizBank.length === 0) {
+    banner('⚠️ Không tìm thấy dữ liệu trong questions.json!', '#e03131', 3000);
     finalizeMatchScore(isWinner, false);
     return;
   }
