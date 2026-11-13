@@ -79,15 +79,13 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 .lb-table th{color:var(--mut);font-size:.8rem;text-transform:uppercase}
 .lb-table tr.me{background:color-mix(in srgb,var(--p2) 12%,transparent);font-weight:700}
 /* Modal trắc nghiệm */
-#quizModal{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+#quizModal{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
 #quizModal[hidden]{display:none}
-.quiz-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;width:100%;max-width:560px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:16px}
-.quiz-card h2{margin:0;font-size:1.4rem;color:var(--ink)}
+.quiz-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;width:100%;max-width:560px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:14px}
+.quiz-card h2{margin:0;font-size:1.35rem;color:var(--ink)}
 .quiz-options{display:flex;flex-direction:column;gap:10px}
-.quiz-opt-btn{text-align:left;padding:12px 16px;border-radius:8px;border:1px solid var(--line);background:var(--paper);cursor:pointer;font-weight:600;transition:all .2s}
-.quiz-opt-btn:hover:not(:disabled){border-color:var(--p2);background:color-mix(in srgb,var(--p2) 8%,transparent)}
-.quiz-opt-btn.correct{background:#16a34a;color:#fff;border-color:#16a34a}
-.quiz-opt-btn.incorrect{background:#dc2626;color:#fff;border-color:#dc2626}
+.quiz-opt-btn{text-align:left;padding:12px 16px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;font-weight:600;transition:all .15s}
+.quiz-opt-btn:hover:not(:disabled){border-color:var(--p2);background:color-mix(in srgb,var(--p2) 10%,transparent)}
 </style></head><body data-ph="lobby"><main>
 <header><h1>Sprouts</h1><p>Draw curves, grow new spots, and leave your opponent without a move.</p><span class="sp"></span><button id="mu"></button><button id="th"></button></header>
 <section class="players">
@@ -130,10 +128,10 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 <!-- Modal Thử thách trắc nghiệm -->
 <div id="quizModal" hidden>
   <div class="quiz-card">
-    <h2 id="qTitle">THỬ THÁCH KIẾN THỨC</h2>
+    <h2>🧠 Thử thách kiến thức sau trận</h2>
     <p id="qResultBanner" style="font-weight:700;margin:0;color:var(--p2);"></p>
-    <div style="font-size:0.9rem;font-weight:600;color:var(--mut);" id="qProgress">Câu 1/3</div>
-    <p id="qContent" style="font-weight:600;margin:0;"></p>
+    <div id="qProgress" style="font-size:0.9rem;font-weight:600;color:var(--mut);">Câu 1/3</div>
+    <p id="qContent" style="font-weight:600;margin:0;font-size:1.05rem;"></p>
     <div class="quiz-options" id="qOptions">
       <button class="quiz-opt-btn" data-key="A"></button>
       <button class="quiz-opt-btn" data-key="B"></button>
@@ -608,31 +606,42 @@ if(socket){
     lock();runCount(d);
   });
   socket.on('game_action',m=>{if(srv&&m&&typeof m=='object')handle(m)});
-  socket.on('elo_result',r=>{
-    if(!srv||seat<0||!r)return;
-    if(r.void){eloMsg='Kết quả hòa hoặc không khớp.';info();return}
-    [0,1].forEach(i=>{const e=$('e'+i);e.textContent='Elo '+r.elo[i];e.hidden=false});
-    if(ph=='play'&&!over){over=true;turn=r.winner^1;cur=null;lt++;$('lot').hidden=true;go=true;rz=r.reason=='resign';tout=r.reason=='timeout';fo=r.reason=='forfeit'}
-    const d=r.delta[seat];eloMsg='Elo: '+r.elo[seat]+' ('+(d>=0?'+':'')+d+')';
-    info();draw();
+  
+  socket.on('match_ended', d => {
+    if (!srv || ph !== 'play') return;
+    if (!over) {
+      over = true;
+      turn = d.winner ^ 1;
+      cur = null;
+      lt++;
+      $('lot').hidden = true;
+      go = true;
+      rz = d.reason === 'resign';
+      tout = d.reason === 'timeout';
+      fo = d.reason === 'forfeit';
+      info();
+      draw();
+    }
   });
 
-  // Quiz listeners
   socket.on('quiz_start',d=>{
     currentQuizSession=d;
     $('quizModal').hidden=false;
-    $('qResultBanner').textContent=`TRẬN ĐẤU: ${d.resultType.toUpperCase()}`;
+    $('qResultBanner').textContent = d.resultType === 'win'
+      ? '🎉 BẠN ĐÃ THẮNG! Trả lời đúng 3/3 câu để nhận thêm 150% Elo thưởng!'
+      : '😔 BẠN ĐÃ THUA! Trả lời đúng 3/3 câu để chỉ bị trừ 0.5 Elo!';
     loadQuizQuestion(d.currentQuestion);
   });
   socket.on('quiz_answer_result',d=>{
-    document.querySelectorAll('.quiz-opt-btn').forEach(b=>b.disabled=false);
     if(d.nextQuestion)loadQuizQuestion(d.nextQuestion);
   });
   socket.on('quiz_completed',d=>{
-    setTimeout(()=>{
-      $('quizModal').hidden=true;
-      alert(`Hoàn thành thử thách! Đúng: ${d.correctCount}/3. Thay đổi Elo: ${d.finalEloDelta>=0?'+':''}${d.finalEloDelta}`);
-    },800);
+    $('quizModal').hidden=true;
+    eloMsg = `Hoàn thành thử thách (${d.correctCount}/3 đúng) • Elo mới: ${d.newElo} (${d.finalEloDelta >= 0 ? '+' : ''}${d.finalEloDelta})`;
+    if (seat >= 0) {
+      $('e' + seat).textContent = 'Elo ' + d.newElo;
+    }
+    info();
   });
 
   socket.on('opponent_left',()=>{
@@ -647,6 +656,7 @@ function loadQuizQuestion(q){
   $('qContent').textContent=q.question;
   ['A','B','C','D'].forEach(k=>{
     const btn=$('qOptions').querySelector(`[data-key="${k}"]`);
+    btn.disabled=false;
     btn.textContent=`${k}. ${q.options[k]||''}`;
     btn.onclick=()=>{
       document.querySelectorAll('.quiz-opt-btn').forEach(b=>b.disabled=true);
