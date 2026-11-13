@@ -4,27 +4,27 @@
 <title>Sprouts Online Multiplayer</title>
 <script src="/socket.io/socket.io.js"></script>
 <style>
-:root{--desk:#e2e9ee;--paper:#fbfdfe;--grid:#dde8ee;--ink:#1c2b36;--mut:#5d6f7b;--p1:#d6336c;--p2:#1c7ed6;--card:#fff;--line:#c9d6de;--sh:0 1px 2px rgba(28,43,54,.06),0 8px 24px rgba(28,43,54,.08);--f:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+:root{--desk:#e2e9ee;--paper:#fbfdfe;--grid:#dde8ee;--ink:#1c2b36;--mut:#5d6f7b;--p1:#d6336c;--p2:#1c7ed6;--card:#fff;--line:#c9d6de;--sh:0 1px 2px rgba(28,43,54,.06),0 8px 24px rgba(28,43,54,.08);--f:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 @media all{:root[data-theme=dark]{color-scheme:dark;--desk:#0d161d;--paper:#14232e;--grid:#1d3240;--ink:#e8f0f5;--mut:#8ea2af;--p1:#ff6b9a;--p2:#5fb0ff;--card:#182934;--line:#27414f;--sh:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3)}}
 *{box-sizing:border-box}
-body{margin:0;padding:clamp(12px,3vw,32px);background:var(--desk);color:var(--ink);font:15px/1.5 var(--f);-webkit-font-smoothing:antialiased}
+body{margin:0;padding:clamp(12px,3vw,32px);background:var(--desk);color:var(--ink);font:15px/1.5 var(--f)}
 main{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
 header{display:flex;align-items:baseline;gap:6px 16px;flex-wrap:wrap}
-h1{font:700 1.75rem/1 var(--f);margin:0;letter-spacing:-.03em}
+h1{font:700 1.75rem/1 var(--f);margin:0}
 header p{margin:0;color:var(--mut);font-size:.9rem}
 .players{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .pl{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border:1px solid var(--line);border-radius:12px}
 .pl i{width:14px;height:14px;border-radius:50%;background:var(--c);flex:none}
 .pl input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font:inherit;font-weight:700}
-.pl em{font-style:normal;font-size:.75rem;font-weight:700;padding:1px 9px;border-radius:99px;background:var(--c);color:var(--paper);white-space:nowrap}
-#st{min-height:1.5em}
+.pl em{font-style:normal;font-size:.75rem;font-weight:700;padding:1px 9px;border-radius:99px;background:var(--c);color:var(--paper)}
+#st{min-height:1.5em;font-weight:600}
 .sheet{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:8px}
 canvas{display:block;width:100%;aspect-ratio:3/2;touch-action:none;border-radius:10px;background:var(--paper);cursor:grab}
 .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .sp{flex:1}
-select,input[type=number],button{font:inherit;font-weight:500;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 14px;cursor:pointer}
+select,button{font:inherit;font-weight:500;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 14px;cursor:pointer}
 button.pri{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.lob{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.lob{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:16px 20px;display:flex;flex-direction:column;gap:12px}
 .match-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--paper);padding:12px;border-radius:10px;border:1px solid var(--line)}
 .match-bar input[type=text]{padding:8px 12px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:700;width:16ch}
 .btn-auto{background:#16a34a;color:#fff;font-weight:700;border:none;padding:10px 18px;border-radius:8px;cursor:pointer}
@@ -34,7 +34,7 @@ button.pri{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .lb-table th,.lb-table td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}
 .lb-table th{color:var(--mut);font-size:.8rem;text-transform:uppercase}
 .lb-table tr.me{background:color-mix(in srgb,var(--p2) 12%,transparent);font-weight:700}
-/* Quiz Modal */
+/* Modal trắc nghiệm */
 #quizModal{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
 #quizModal[hidden]{display:none}
 .quiz-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;width:100%;max-width:560px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:16px}
@@ -42,29 +42,28 @@ button.pri{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .quiz-options{display:flex;flex-direction:column;gap:10px}
 .quiz-opt-btn{text-align:left;padding:12px 16px;border-radius:8px;border:1px solid var(--line);background:var(--paper);cursor:pointer;font-weight:600;transition:all .2s}
 .quiz-opt-btn:hover:not(:disabled){border-color:var(--p2);background:color-mix(in srgb,var(--p2) 8%,transparent)}
-.quiz-opt-btn.correct{background:#16a34a;color:#fff;border-color:#16a34a}
-.quiz-opt-btn.incorrect{background:#dc2626;color:#fff;border-color:#dc2626}
+body[data-ph=play] #lobby,body[data-ph=play] #lb{display:none}
 </style></head><body data-ph="lobby"><main>
-<header><h1>Sprouts Online</h1><p>Phiên bản nâng cấp Multiplayer Real-time tích hợp trắc nghiệm Elo</p><span class="sp"></span><button id="mu"></button><button id="th"></button></header>
+<header><h1>Sprouts Online</h1><p>Trò chơi nối chấm chiến thuật thời gian thực</p><span class="sp"></span><button id="th">☾ Giao diện</button></header>
 <section class="players">
-<div class="pl" id="c0" style="--c:var(--p1)"><i></i><input id="p0" maxlength="16" value="Player 1" readonly><em id="t0" hidden></em><span class="elo" id="e0" hidden></span></div>
-<div class="pl" id="c1" style="--c:var(--p2)"><i></i><input id="p1" maxlength="16" value="Player 2" readonly><em id="t1" hidden></em><span class="elo" id="e1" hidden></span></div>
+<div class="pl" id="c0" style="--c:var(--p1)"><i></i><input id="p0" maxlength="16" value="Player 1" readonly><em id="t0" hidden></em><span id="e0" hidden></span></div>
+<div class="pl" id="c1" style="--c:var(--p2)"><i></i><input id="p1" maxlength="16" value="Player 2" readonly><em id="t1" hidden></em><span id="e1" hidden></span></div>
 </section>
 <div id="st" role="status"></div>
-<section class="lob" id="lobby"><h2>Lobby & Tìm trận nhanh</h2>
-<div class="match-bar"><label for="pName"><b>Tên của bạn:</b></label><input type="text" id="pName" maxlength="16" autocomplete="off" placeholder="Tên hiển thị"><button id="qb" class="btn-auto">⚡ Tìm trận nhanh</button><span id="sv"></span><span class="sp"></span><span>Elo: <b id="myElo">500</b></span></div>
+<section class="lob" id="lobby"><h2>Phòng chờ (Lobby)</h2>
+<div class="match-bar"><label for="pName"><b>Tên của bạn:</b></label><input type="text" id="pName" maxlength="16" autocomplete="off" placeholder="Tên hiển thị"><button id="qb" class="btn-auto">⚡ Tìm trận nhanh</button><span id="sv">Đang kết nối...</span><span class="sp"></span><span>Elo: <b id="myElo">500</b></span></div>
 <p id="qm" role="status"></p>
 <div class="lrow"><label>Số lượng Node (Spots): <select id="n"><option value="4" selected>4 Node</option><option value="5">5 Node</option><option value="6">6 Node</option></select></label></div>
 </section>
 <section class="lob" id="lb"><h2>🏆 Bảng xếp hạng Elo (Top 10)</h2>
 <table class="lb-table"><thead><tr><th>#</th><th>Tên người chơi</th><th>Điểm Elo</th><th>Số ván</th></tr></thead><tbody id="lbBody"><tr><td colspan="4">Đang tải dữ liệu...</td></tr></tbody></table></section>
-<div class="sheet" id="sheet"><canvas id="c"></canvas><div id="bn" hidden></div></div>
+<div class="sheet" id="sheet"><canvas id="c"></canvas></div>
 <div class="bar">
-<span class="sp"></span><button id="un">Undo</button><button id="nw" class="pri">New game</button>
+<span class="sp"></span><button id="un">Undo</button><button id="nw" class="pri">Chơi ván mới</button>
 </div>
 </main>
 
-<!-- Quiz Modal -->
+<!-- Modal Thử thách trắc nghiệm -->
 <div id="quizModal" hidden>
   <div class="quiz-card">
     <h2 id="qTitle">THỬ THÁCH KIẾN THỨC</h2>
@@ -85,9 +84,8 @@ const $=id=>document.getElementById(id),cv=$('c'),g=cv.getContext('2d');
 const socket=typeof io!=='undefined'?io({transports:['websocket','polling']}):null;
 const W=900,H=600,R=11,D=2;cv.width=W*D;cv.height=H*D;
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim(),pc=p=>css(p?'--p2':'--p1');
-let spots=[],lines=[],turn,over,hist,cur,go=false,lim=0,seat=-1,run=false,fc=0,pan=null,pv=null,cam={x:0,y:0,z:1};
-let names=['Player 1','Player 2'],ph='lobby',searching=false,myPub='',lbData=[];
-let currentQuizSession=null;
+let spots=[],lines=[],turn=0,over=false,hist=[],cur=null,go=false,cam={x:0,y:0,z:1};
+let names=['Player 1','Player 2'],searching=false,myPub='',lbData=[],seat=-1,currentQuizSession=null;
 
 const pid=(()=>{let v='';try{v=localStorage.getItem('sp-pid')||''}catch(e){}
   if(!/^[A-Za-z0-9_-]{8,64}$/.test(v)){v=[...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,'0')).join('');try{localStorage.setItem('sp-pid',v)}catch(e){}}
@@ -107,7 +105,7 @@ $('qb').onclick=()=>{
   if(![4,5,6].includes(nodes)){alert('Số lượng Node không hợp lệ!');return;}
   if(!searching){
     searching=true;
-    $('qm').textContent='🔍 Đang tìm trận...';
+    $('qm').textContent='🔍 Đang tìm đối thủ...';
     socket.emit('find_match',{pid,name:myName(),nodes});
   }else{
     searching=false;
@@ -131,7 +129,6 @@ function renderLb(){
     [i+1,(u.online?'🟢 ':'')+u.name,u.elo,u.games].forEach((v,k)=>{const td=tr.insertCell();td.textContent=v;if(k==2)td.style.fontWeight='700'})});
 }
 
-// Socket events
 if(socket){
   socket.on('connect',()=>{socket.emit('set_name',{pid,name:myName()});$('sv').textContent='🟢 Đã kết nối';});
   socket.on('disconnect',()=>{$('sv').textContent='🔴 Mất kết nối';});
@@ -149,11 +146,7 @@ if(socket){
     [0,1].forEach(i=>{$('e'+i).textContent='Elo '+d.elo[i];$('e'+i).hidden=false});
     draw();
   });
-  socket.on('elo_result',r=>{
-    if(r.void){alert('Kết quả hòa hoặc lỗi, không tính Elo.');return;}
-  });
 
-  // Quiz listeners
   socket.on('quiz_start',d=>{
     currentQuizSession=d;
     $('quizModal').hidden=false;
@@ -164,30 +157,26 @@ if(socket){
   socket.on('quiz_answer_result',d=>{
     const btns=document.querySelectorAll('.quiz-opt-btn');
     btns.forEach(b=>b.disabled=false);
-    if(d.nextQuestion){
-      loadQuizQuestion(d.nextQuestion);
-    }
+    if(d.nextQuestion) loadQuizQuestion(d.nextQuestion);
   });
 
   socket.on('quiz_completed',d=>{
     setTimeout(()=>{
       $('quizModal').hidden=true;
-      alert(`Hoàn thành thử thách! Trả lời đúng: ${d.correctCount}/3. Thay đổi Elo: ${d.finalEloDelta>=0?'+':''}${d.finalEloDelta}`);
+      alert(`Hoàn thành thử thách! Đúng: ${d.correctCount}/3. Biến động Elo: ${d.finalEloDelta>=0?'+':''}${d.finalEloDelta}`);
       document.body.dataset.ph='lobby';
-    },1000);
+    },600);
   });
 }
 
 function loadQuizQuestion(q){
   $('qProgress').textContent=`Câu ${q.index}/3`;
   $('qContent').textContent=q.question;
-  const optKeys=['A','B','C','D'];
-  optKeys.forEach(k=>{
+  ['A','B','C','D'].forEach(k=>{
     const btn=$(`qOptions`).querySelector(`[data-key="${k}"]`);
     btn.textContent=`${k}. ${q.options[k]||''}`;
     btn.onclick=()=>{
-      const btns=document.querySelectorAll('.quiz-opt-btn');
-      btns.forEach(b=>b.disabled=true);
+      document.querySelectorAll('.quiz-opt-btn').forEach(b=>b.disabled=true);
       socket.emit('submit_quiz_answer',{sessionId:currentQuizSession.sessionId,selectedAnswer:k});
     };
   });
@@ -204,4 +193,5 @@ function draw(){
 }
 
 $('th').onclick=()=>document.documentElement.dataset.theme=document.documentElement.dataset.theme=='dark'?'light':'dark';
+$('nw').onclick=()=>{document.body.dataset.ph='lobby';};
 </script></body></html>
