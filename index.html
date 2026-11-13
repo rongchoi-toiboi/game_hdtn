@@ -175,7 +175,7 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 
   <div class="match-box">
     <button id="btn-find-match">⚔️ TÌM TRẬN NGẪU NHIÊN</button>
-    <div class="match-sub" id="match-sub">Tự động ghép cặp với người chơi đang tìm trận</div>
+    <div class="match-sub" id="match-sub">Ghép cặp xong vào thẳng trận đấu (không cần bấm Ready)</div>
   </div>
 </section>
 
@@ -286,7 +286,7 @@ const names=['Player 1','Player 2'],ptr=new Map();
 let ph='lobby',rdy=[false,false],cdt=0,rz=false,rzA=false,ended=false,warned=false,lsec=-1,bt=0,fxr=false,mute=false,ac;const fx=[];
 try{mute=localStorage.getItem('sp-mute')=='1'}catch(e){}
 
-// ---- HỆ THỐNG ELO, LEADERBOARD, ĐỔI TÊN DUY NHẤT & TÌM TRẬN ----
+// ---- HỆ THỐNG ELO, LEADERBOARD, ĐỔI TÊN DUY NHẤT & TÌM TRẬN TỰ ĐỘNG ----
 const socket = typeof io !== 'undefined' ? io() : null;
 let userElo = 100;
 let myCustomName = '';
@@ -303,6 +303,7 @@ let shieldActive = false;     // Khiên bảo hộ (30 ELO -> miễn trừ ELO k
 let hintPath = null;          // Thấu thị (25 ELO -> gợi ý 1 nước đi hợp lệ)
 let latestLeaderboard = [];
 let isSearchingMatch = false;
+let autoStartMatch = false;   // Cờ tự động vào trận luôn không cần bấm Ready khi ghép tự động
 
 function applyMyNameLocally(validName) {
   myCustomName = validName;
@@ -323,7 +324,6 @@ function submitNewName(raw) {
     snd('bad');
     return;
   }
-  // Kiểm tra trùng trên toàn bảng xếp hạng online
   const dupOnline = latestLeaderboard.some(p => (!socket || p.id !== socket.id) && p.name.trim().toLowerCase() === check.normalized.toLowerCase());
   if (dupOnline) {
     $('name-err').textContent = `Tên "${check.normalized}" đã tồn tại trên hệ thống!`;
@@ -400,6 +400,7 @@ function renderLeaderboard(list) {
     const btn = tr.querySelector('button');
     if (btn && !btn.disabled) {
       btn.onclick = async () => {
+        autoStartMatch = true;
         if (!room) await hostRoom();
         if (socket) socket.emit('challenge_player', { targetId: p.id, room });
         ns(`Đã gửi lời thách đấu tới ${p.name}!`);
@@ -477,13 +478,13 @@ $('btn-shield').onclick = () => {
   syncEloAndServer();
 };
 
-// Nút Tìm Trận Ngẫu Nhiên (Tự động ghép cặp & kết nối 2 máy)
+// Nút Tìm Trận Ngẫu Nhiên (Ghép xong tự động vào trận luôn không cần bấm Ready)
 function setSearchingUI(searching) {
   isSearchingMatch = searching;
   const btn = $('btn-find-match');
   btn.classList.toggle('searching', searching);
   btn.innerHTML = searching ? '⏳ ĐANG TÌM ĐỐI THỦ... (Bấm để hủy)' : '⚔️ TÌM TRẬN NGẪU NHIÊN';
-  $('match-sub').textContent = searching ? 'Đang quét người chơi trực tuyến...' : 'Tự động ghép cặp với người chơi đang tìm trận';
+  $('match-sub').textContent = searching ? 'Đang quét người chơi trực tuyến...' : 'Ghép cặp xong vào thẳng trận đấu (không cần bấm Ready)';
 }
 
 $('btn-find-match').onclick = () => {
@@ -528,14 +529,14 @@ if (socket) {
   });
   socket.on('match_found', async d => {
     setSearchingUI(false);
+    autoStartMatch = true; // Đánh dấu tự động vào trận luôn không cần bấm Ready
     snd('chime');
     $('net').open = true;
-    $('match-sub').textContent = `🎉 Đã tìm thấy đối thủ! Đang vào phòng ${d.roomCode}...`;
-    // Tự động ghép 2 thiết bị vào chung phòng WebRTC
+    $('match-sub').textContent = `🎉 Đã ghép trận! Đang vào bàn đấu ngay...`;
     if (d.role === 'host') {
       await hostRoomWithCode(d.roomCode);
     } else {
-      setTimeout(() => joinRoom(d.roomCode), 500);
+      setTimeout(() => joinRoom(d.roomCode), 400);
     }
   });
   socket.on('error_message', d => {
@@ -545,7 +546,10 @@ if (socket) {
   socket.on('challenge_blocked', d => { snd('bad'); banner(d.message, css('--purp'), 2500); });
   socket.on('incoming_challenge', d => {
     snd('chime');
-    if (confirm(`⚔️ ${d.fromName} thách đấu bạn! Tham gia phòng ${d.room}?`)) joinRoom(d.room);
+    if (confirm(`⚔️ ${d.fromName} thách đấu bạn! Vào trận ngay tại phòng ${d.room}?`)) {
+      autoStartMatch = true;
+      joinRoom(d.room);
+    }
   });
 }
 
@@ -564,7 +568,6 @@ function validateUniquePlayerName(name, playerId, currentNames) {
   const norm = normalizePlayerName(name);
   if (!norm || norm.length < 2 || norm.length > 20) return { valid: false, message: 'Tên phải từ 2 đến 20 ký tự và không được để trống.' };
   
-  // Kiểm tra trùng với người chơi còn lại
   for (let i = 0; i < currentNames.length; i++) {
     if (i !== playerId && normalizePlayerName(currentNames[i]).toLowerCase() === norm.toLowerCase()) {
       return { valid: false, message: 'Tên này đã được người chơi khác sử dụng.' };
@@ -573,7 +576,7 @@ function validateUniquePlayerName(name, playerId, currentNames) {
   return { valid: true, normalized: norm };
 }
 
-// ---- QUIZ SYSTEM & 100 QUESTIONS ----
+// ---- QUIZ SYSTEM & 100 QUESTIONS (TẢI TỪ quizz.json) ----
 let quizBank = [];
 let quizSessionActive = false;
 let consecutiveCorrect = 0;
@@ -583,19 +586,24 @@ let usedQuestionIds = new Set();
 let baseGameScore = 10; // Điểm gốc mặc định mỗi trận
 
 async function loadQuizData() {
-  try {
-    const res = await fetch('quiz-data.json');
-    const data = await res.json();
-    quizBank = data.questions || [];
-  } catch(e) {
-    console.error('Không thể tải ngân hàng câu hỏi quiz-data.json', e);
+  for (const file of ['quizz.json', 'quiz-data.json']) {
+    try {
+      const res = await fetch(file);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data && Array.isArray(data.questions) && data.questions.length > 0) {
+        quizBank = data.questions;
+        console.log(`Đã tải ${quizBank.length} câu hỏi từ ${file}`);
+        return;
+      }
+    } catch(e) {}
   }
+  console.error('Không thể tải ngân hàng câu hỏi quizz.json');
 }
 loadQuizData();
 
 function startQuizSession(isWinner) {
   if (quizBank.length === 0) {
-    // Nếu chưa tải kịp, hoàn tất luôn không qua quiz
     finalizeMatchScore(isWinner, false);
     return;
   }
@@ -612,7 +620,6 @@ function startQuizSession(isWinner) {
 function showNextQuizQuestion() {
   if (consecutiveCorrect >= 3 || quizCompleted) return;
 
-  // Lọc câu hỏi chưa dùng
   const available = quizBank.filter(q => !usedQuestionIds.has(q.id));
   if (available.length === 0) {
     usedQuestionIds.clear();
@@ -622,9 +629,7 @@ function showNextQuizQuestion() {
   const q = available[Math.floor(Math.random() * available.length)];
   usedQuestionIds.add(q.id);
 
-  // Xáo trộn đáp án mà vẫn giữ đúng đáp án chính xác
   const originalOptions = q.options.map((opt, idx) => ({ text: opt, isCorrect: idx === q.answer }));
-  // Shuffle options
   for (let i = originalOptions.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [originalOptions[i], originalOptions[j]] = [originalOptions[j], originalOptions[i]];
@@ -684,10 +689,8 @@ function handleQuizAnswer(selectedIndex, btnElement) {
         finalizeMatchScore((turn ^ 1) === (seat >= 0 ? seat : (turn ^ 1)), true);
       }, 1200);
     } else {
-      // Chờ 1.2s rồi qua câu tiếp theo hoặc kết thúc nếu sai
       setTimeout(() => {
         if (!isCorrect) {
-          // Sai chuỗi -> kết thúc quiz session với kết quả không đạt chuỗi
           quizCompleted = true;
           $('quiz-modal').hidden = true;
           finalizeMatchScore((turn ^ 1) === (seat >= 0 ? seat : (turn ^ 1)), false);
@@ -709,7 +712,7 @@ function finalizeMatchScore(isWinner, streakAchieved) {
 
   if (isWinner) {
     if (streakAchieved) {
-      finalScore = baseGameScore * 1.5; // Thêm 50%
+      finalScore = baseGameScore * 1.5;
       reportText = `🎉 CHIẾN THẮNG & ĐẠT CHUỖI QUIZ! Điểm gốc: ${baseGameScore} → Tổng điểm (x1.5): ${finalScore}`;
     } else {
       finalScore = baseGameScore;
@@ -728,11 +731,11 @@ function finalizeMatchScore(isWinner, streakAchieved) {
       shieldActive = false;
       reportText = `🛡️ KHIÊN BẢO HỘ KÍCH HOẠT! Bạn không bị trừ ELO.`;
     } else if (streakAchieved) {
-      finalScore = Math.max(0, baseGameScore - 0.5); // Giảm phạt còn 0.5đ
+      finalScore = Math.max(0, baseGameScore - 0.5);
       userElo = Math.max(0, userElo - 0.5);
-      reportText = `🛡️ THUT NHƯNG CỨU TRỢ THÀNH CÔNG! Phạt cố định chỉ còn: 0.5đ (Điểm cuối: ${finalScore})`;
+      reportText = `🛡️ THUA NHƯNG CỨU TRỢ THÀNH CÔNG! Phạt cố định chỉ còn: 0.5đ (Điểm cuối: ${finalScore})`;
     } else {
-      finalScore = baseGameScore - 2; // Phạt chuẩn thông thường
+      finalScore = baseGameScore - 2;
       userElo = Math.max(0, userElo - 2);
       reportText = `💔 THẤT BẠI. Áp dụng mức phạt chuẩn. Điểm cuối: ${finalScore}`;
     }
@@ -767,7 +770,6 @@ function endFx(){
   banner((rz?'Resigned! ':tout?'Time is up! ':'')+names[w]+' wins!',col,3200);
   for(let k=0;k<6;k++)setTimeout(()=>{const q=wld([Math.random()*W,Math.random()*H]);burst(q[0],q[1],col,18,3,1000)},k*180);
   
-  // Kích hoạt Quiz sau trận đấu (Winner/Loser)
   setTimeout(() => {
     scoreFinalized = false;
     const isWinner = (seat >= 0 ? seat === w : true);
@@ -803,7 +805,6 @@ function fit(){const[x0,y0,x1,y1]=bbox();cam={x:(x0+x1)/2,y:(y0+y1)/2,z:Math.max
 
 function newGame(){
   const n=parseInt($('n').value, 10);
-  // Cố định node chỉ nhận 4, 5, 6
   const validSpots = [4, 5, 6].includes(n) ? n : 5;
   spots=[];lines=[];hist=[];over=tout=false;cur=null;rz=ended=warned=false;lsec=-1;fx.length=0;hintPath=null;setPh('play');
   lim=Math.round(Math.max(0,+$('tm').value||0)*60000);clk=[lim,lim];turn=Math.random()<.5?0:1;
@@ -1021,7 +1022,6 @@ $('zi').onclick=()=>{zoomAt([W/2,H/2],cam.z*1.3);draw()};$('zo').onclick=()=>{zo
 $('un').onclick=undo;
 $('nw').onclick=()=>{if(over||ph!='play'){toLobby(1);return}if(!rzA){rzA=true;setTimeout(()=>{rzA=false;info()},3000);info();return}rzA=false;const i=seat>=0?seat:turn;send({t:'resign',i});resign(i)};
 
-// Quản lý thay đổi nodes & kiểm tra hợp lệ 4, 5, 6
 $('n').onchange=$('tm').onchange=()=>{
   let val = parseInt($('n').value, 10);
   if (![4, 5, 6].includes(val)) { val = 5; $('n').value = '5'; }
@@ -1102,7 +1102,27 @@ function mk(){
 }
 function wire(c){
   dc=c;
-  c.onopen=()=>{closeRel();hideRoom();seat=me;if(myCustomName){names[me]=myCustomName;$('p'+me).value=myCustomName;}lock();ns('Connected. You are '+(me?'player 2 (blue).':'player 1 (red).'));toLobby();$('net').open=false;send({t:'name',i:me,v:names[me]});if(me==0)send({t:'cfg',n:$('n').value,tm:$('tm').value})};
+  c.onopen=()=>{
+    closeRel();hideRoom();seat=me;
+    if(myCustomName){names[me]=myCustomName;$('p'+me).value=myCustomName;}
+    lock();ns('Connected. You are '+(me?'player 2 (blue).':'player 1 (red).'));
+    toLobby();$('net').open=false;
+    send({t:'name',i:me,v:names[me]});
+    if(me==0)send({t:'cfg',n:$('n').value,tm:$('tm').value});
+
+    // Nếu ghép trận tự động / thách đấu -> Bỏ qua Ready, tự động vào trận luôn
+    if (autoStartMatch) {
+      autoStartMatch = false;
+      rdy = [true, true];
+      lobbyUI();
+      if (me == 0) {
+        setTimeout(() => {
+          send({ t: 'count' });
+          runCount();
+        }, 300);
+      }
+    }
+  };
   c.onmessage=recv;c.onclose=drop;
 }
 function drop(){if(seat<0)return;dc=null;seat=-1;rdy=[false,false];lock();ns('Disconnected. You can keep playing on this device or reconnect.');if(ph=='count')toLobby();else info()}
