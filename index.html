@@ -32,16 +32,16 @@ header p{margin:0;color:var(--mut);font-size:.9rem}
 .sitem-desc{font-size:.74rem;color:var(--mut);line-height:1.3;font-weight:400}
 
 /* Leaderboard Panel */
-.lb-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:var(--sh)}
-.lb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-weight:700;font-size:.95rem}
-.lb-table{width:100%;border-collapse:collapse;font-size:.86rem}
+.lb-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;box-shadow:var(--sh)}
+.lb-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;font-weight:700;font-size:1rem}
+.lb-table{width:100%;border-collapse:collapse;font-size:.88rem}
 .lb-table th{text-align:left;color:var(--mut);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
-.lb-table td{padding:7px 8px;border-bottom:1px solid color-mix(in srgb,var(--line) 50%,transparent)}
+.lb-table td{padding:8px 8px;border-bottom:1px solid color-mix(in srgb,var(--line) 50%,transparent)}
 .lb-table tr:last-child td{border-bottom:none}
-.lb-rank{font-weight:800;width:3.2ch}
+.lb-rank{font-weight:800;width:3.5ch}
 .lb-rank-1{color:#f59f00}.lb-rank-2{color:#868e96}.lb-rank-3{color:#d9480f}
 .lb-elo{font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
-.lb-btn{padding:3px 10px;font-size:.76rem;border-radius:7px}
+.lb-btn{padding:4px 11px;font-size:.78rem;border-radius:8px}
 
 .players{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .pl{display:flex;align-items:center;gap:10px;padding:11px 15px;background:var(--card);border:1.5px solid var(--line);border-radius:13px;box-shadow:var(--sh);transition:border-color .25s,box-shadow .25s}
@@ -78,7 +78,7 @@ textarea{display:block;width:100%;height:4.5em;margin:4px 0 10px;padding:6px 8px
 .pl.on .clk{color:var(--ink)}.clk.low{color:#e03131!important;animation:bl 1s infinite}
 @keyframes bl{50%{opacity:.4}}
 @media(prefers-reduced-motion:reduce){.clk.low{animation:none}.lr span{transition:none}}
-body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,body[data-ph=count] .bar,body[data-ph=play] #lobby,body[data-ph=play] #net{display:none}
+body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,body[data-ph=count] .bar,body[data-ph=play] #lobby,body[data-ph=play] #net,body[data-ph=play] #leaderboard-sec{display:none}
 .lob{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:16px 20px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
 .lob h2{font:600 1.1rem/1 var(--f);margin:0}.lob p{margin:0;color:var(--mut);max-width:70ch;font-size:.9rem}.lob small{color:var(--mut);font-size:.8rem}
 .lrow{display:flex;flex-wrap:wrap;gap:18px}.lrow label{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:.9rem}
@@ -171,29 +171,9 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 </section>
 <div id="st" role="status"></div>
 <section class="lob" id="lobby"><h2>Lobby</h2><p id="lm"></p><div class="lrow"><label>Spots <select id="n"><option value="4">4 Nodes</option><option value="5" selected>5 Nodes</option><option value="6">6 Nodes</option></select></label><label>Minutes per player <input id="tm" type="number" min="0" max="999" step="any" value="5" inputmode="decimal" aria-label="Minutes per player, 0 for no limit"></label><small>0 = no time limit</small></div><p>Rules lock once the match starts.</p><div id="cd" hidden></div></section>
-<div class="sheet" id="sheet">
-  <canvas id="c"></canvas>
-  <div id="bn" hidden></div>
-  <div id="lot" hidden><div class="lr"><span id="l0" style="--c:var(--p1)"></span><span id="l1" style="--c:var(--p2)"></span></div></div>
-  <!-- Quiz Modal Overlay -->
-  <div id="quiz-modal" hidden>
-    <div class="quiz-card">
-      <div class="quiz-header">
-        <h3 id="q-mode-title" class="quiz-title">Thử thách Quiz</h3>
-        <span id="q-prog" class="quiz-progress">0/3</span>
-      </div>
-      <p id="q-text" class="quiz-question">Đang tải câu hỏi...</p>
-      <div id="q-options" class="quiz-options"></div>
-      <div id="q-fb" class="quiz-feedback"></div>
-    </div>
-  </div>
-</div>
-<div class="bar">
-<span class="sp"></span><button id="zo" title="Zoom out" aria-label="Zoom out">−</button><button id="zi" title="Zoom in" aria-label="Zoom in">+</button><button id="ft" title="Fit everything in view">Fit</button><button id="un">Undo</button><button id="nw" class="pri">New game</button>
-</div>
 
-<!-- Bảng Xếp Hạng ELO (Leaderboard) & Tìm trận nhanh -->
-<section class="lb-card">
+<!-- Bảng Xếp Hạng ELO (Leaderboard) & Nút Tìm Trận Ngẫu Nhiên -->
+<section class="lb-card" id="leaderboard-sec">
   <div class="lb-head">
     <span>📊 Bảng Xếp Hạng ELO (Leaderboard)</span>
     <button id="btn-find-match" class="pri">⚔️ Tìm trận ngẫu nhiên</button>
@@ -214,6 +194,26 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
   </table>
 </section>
 
+<div class="sheet" id="sheet">
+  <canvas id="c"></canvas>
+  <div id="bn" hidden></div>
+  <div id="lot" hidden><div class="lr"><span id="l0" style="--c:var(--p1)"></span><span id="l1" style="--c:var(--p2)"></span></div></div>
+  <!-- Quiz Modal Overlay -->
+  <div id="quiz-modal" hidden>
+    <div class="quiz-card">
+      <div class="quiz-header">
+        <h3 id="q-mode-title" class="quiz-title">Thử thách Quiz</h3>
+        <span id="q-prog" class="quiz-progress">0/3</span>
+      </div>
+      <p id="q-text" class="quiz-question">Đang tải câu hỏi...</p>
+      <div id="q-options" class="quiz-options"></div>
+      <div id="q-fb" class="quiz-feedback"></div>
+    </div>
+  </div>
+</div>
+<div class="bar">
+<span class="sp"></span><button id="zo" title="Zoom out" aria-label="Zoom out">−</button><button id="zi" title="Zoom in" aria-label="Zoom in">+</button><button id="ft" title="Fit everything in view">Fit</button><button id="un">Undo</button><button id="nw" class="pri">New game</button>
+</div>
 <details><summary>How to play</summary>
 <p>Players alternate. On your turn, press on a spot and drag to another spot (or back to the same spot to make a loop). The curve may not cross any line, itself included, or pass through another spot. A new spot is then placed at the middle of your curve.</p>
 <p>The board is endless. Scroll or pinch to zoom, and drag empty space to move the view. Lines are elastic: between moves they pull straight and push each other apart, so the drawing keeps rearranging itself and never clogs.</p>
@@ -289,7 +289,15 @@ function renderLeaderboard(list) {
   latestLeaderboard = list || latestLeaderboard;
   const tbody = $('lb-body');
   if (!latestLeaderboard.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--mut);text-align:center">Chưa có người chơi nào trên bảng xếp hạng.</td></tr>`;
+    const myIdx = seat >= 0 ? seat : 0;
+    const bcLeft = Math.max(0, Math.ceil((bayChoUntil - Date.now()) / 1000));
+    tbody.innerHTML = `<tr>
+      <td class="lb-rank lb-rank-1">#1</td>
+      <td><b>${names[myIdx]}</b> <small style="color:var(--p2)">(Bạn)</small></td>
+      <td class="lb-elo">${userElo} ELO</td>
+      <td>${bcLeft > 0 ? `<span style="color:var(--purp);font-weight:600">🚫 Bảy chọ (${bcLeft}s)</span>` : '<span style="color:var(--teal)">● Sẵn sàng</span>'}</td>
+      <td>—</td>
+    </tr>`;
     return;
   }
   tbody.innerHTML = '';
@@ -334,6 +342,7 @@ $('btn-baycho').onclick = () => {
   snd('ready');
   banner('🚫 Đã bật Bảy chọ (Chặn thách đấu 3 phút)!', css('--purp'), 2000);
   syncEloAndServer();
+  renderLeaderboard();
 };
 
 // 3a/ Đồng hồ cát (15 ELO - +45s)
@@ -383,17 +392,30 @@ $('btn-shield').onclick = () => {
   syncEloAndServer();
 };
 
-// Nút bấm tìm trận ngẫu nhiên trên Leaderboard (giữ nguyên sự kiện find_match gốc)
+// Nút bấm tìm trận ngẫu nhiên trên Leaderboard
 $('btn-find-match').onclick = () => {
-  if (!socket) return;
+  if (!socket) {
+    ns('Cần chạy qua server (node server.js) để tìm trận online.');
+    return;
+  }
+  $('btn-find-match').disabled = true;
+  $('btn-find-match').textContent = '⏳ Đang tìm đối thủ...';
   socket.emit('find_match', { nodes: parseInt($('n').value, 10) });
 };
 
 if (socket) {
   socket.on('leaderboard_update', renderLeaderboard);
   socket.on('waiting', d => ns(d.message));
-  socket.on('match_found', d => { ns(`Tìm thấy trận: ${d.roomId}`); });
-  socket.on('error_message', d => ns(d.message));
+  socket.on('match_found', d => {
+    $('btn-find-match').disabled = false;
+    $('btn-find-match').textContent = '⚔️ Tìm trận ngẫu nhiên';
+    ns(`Tìm thấy trận: ${d.roomId}`);
+  });
+  socket.on('error_message', d => {
+    $('btn-find-match').disabled = false;
+    $('btn-find-match').textContent = '⚔️ Tìm trận ngẫu nhiên';
+    ns(d.message);
+  });
   socket.on('challenge_blocked', d => { snd('bad'); banner(d.message, css('--purp'), 2500); });
   socket.on('incoming_challenge', d => {
     snd('chime');
@@ -622,7 +644,7 @@ function endFx(){
   // Kích hoạt Quiz sau trận đấu (Winner/Loser)
   setTimeout(() => {
     scoreFinalized = false;
-    const isWinner = (seat >= 0 ? seat === w : true); // Hoặc logic phân định người chơi hiện tại
+    const isWinner = (seat >= 0 ? seat === w : true);
     startQuizSession(isWinner);
   }, 1500);
 }
@@ -894,14 +916,12 @@ addEventListener('resize',draw);
       info();
       send({t:'name', i, v: names[i]});
       syncEloAndServer();
-    } else {
-      // Nếu không hợp lệ khi nhập (nhưng cho phép gõ tạm, sẽ khôi phục hoặc chuẩn hóa khi blur/change nếu trống)
+      renderLeaderboard();
     }
   };
   $('p'+i).onblur = e => {
     const validation = validateUniquePlayerName(e.target.value, i, names);
     if (!validation.valid) {
-      // Khôi phục tên cũ nếu không hợp lệ
       e.target.value = names[i];
       banner(validation.message, '#e03131', 2000);
     } else {
@@ -910,6 +930,7 @@ addEventListener('resize',draw);
       info();
       send({t:'name', i, v: names[i]});
       syncEloAndServer();
+      renderLeaderboard();
     }
   };
 });
@@ -1061,7 +1082,7 @@ $('th').onclick=()=>th(document.documentElement.dataset.theme=='dark'?'light':'d
 let t0;try{t0=localStorage.getItem('sp-theme')}catch(e){}
 th(t0||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
 setInterval(clockTick,200);
-spots=[];lines=[];hist=[];turn=0;over=false;setMute(mute);setPh('lobby');info();draw();syncEloAndServer();
+spots=[];lines=[];hist=[];turn=0;over=false;setMute(mute);setPh('lobby');info();draw();syncEloAndServer();renderLeaderboard();
 {const r=location.hash.match(/room=([A-Za-z0-9]{6})/);if(r){history.replaceState(null,'',location.href.split('#')[0]);$('net').open=true;joinRoom(r[1])}}
 {const m=location.hash.match(/join=([^&\s]+)/);if(m){history.replaceState(null,'',location.href.split('#')[0]);$('net').open=true;$('i').value=decodeURIComponent(m[1]);auto();$('net').scrollIntoView({block:'nearest'})}}
 </script></body></html>
