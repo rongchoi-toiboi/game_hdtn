@@ -47,7 +47,6 @@ function emitLeaderboard() {
 
 io.on('connection', (socket) => {
     console.log('Có người chơi kết nối:', socket.id);
-    // Tạo tên mặc định duy nhất không trùng lặp
     let defaultName = 'Player_' + socket.id.slice(0, 4);
     while (isNameTaken(defaultName, socket.id)) {
         defaultName = 'Player_' + Math.floor(1000 + Math.random() * 9000);
@@ -57,7 +56,6 @@ io.on('connection', (socket) => {
     socket.emit('init_profile', { name: defaultName });
     emitLeaderboard();
 
-    // Cập nhật tên (có kiểm tra trùng), điểm ELO hoặc trạng thái Bảy chọ lên Leaderboard
     socket.on('sync_player', (data) => {
         const p = players.get(socket.id);
         if (!p || !data) return;
@@ -82,7 +80,6 @@ io.on('connection', (socket) => {
         emitLeaderboard();
     });
 
-    // Kiểm tra chặn thách đấu khi có người thách đấu
     socket.on('challenge_player', (data) => {
         if (!data || !data.targetId) return;
         const target = players.get(data.targetId);
@@ -100,15 +97,12 @@ io.on('connection', (socket) => {
         });
     });
 
-    // Khi người chơi bấm tìm trận ngẫu nhiên
     socket.on('find_match', (data) => {
-        // Kiểm tra số lượng nodes hợp lệ (4, 5, hoặc 6)
         if (data && data.nodes && ![4, 5, 6].includes(Number(data.nodes))) {
             socket.emit('error_message', { message: 'Số lượng nodes không hợp lệ. Chỉ chấp nhận 4, 5 hoặc 6.' });
             return;
         }
 
-        // Hủy tìm trận nếu đang chờ
         if (data && data.cancel) {
             if (waitingPlayer && waitingPlayer.id === socket.id) {
                 waitingPlayer = null;
@@ -126,7 +120,6 @@ io.on('connection', (socket) => {
             socket.join(roomId);
             hostSocket.join(roomId);
 
-            // Gửi mã phòng 6 ký tự chuẩn để 2 máy tự động kết nối WebRTC vào nhau
             hostSocket.emit('match_found', { roomId, roomCode, role: 'host', p1: hostSocket.id, p2: socket.id });
             socket.emit('match_found', { roomId, roomCode, role: 'join', p1: hostSocket.id, p2: socket.id });
         } else {
