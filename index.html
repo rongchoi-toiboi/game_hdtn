@@ -568,7 +568,6 @@ function validateUniquePlayerName(name, playerId, currentNames) {
   const norm = normalizePlayerName(name);
   if (!norm || norm.length < 2 || norm.length > 20) return { valid: false, message: 'Tên phải từ 2 đến 20 ký tự và không được để trống.' };
   
-  // Kiểm tra trùng với người chơi còn lại
   for (let i = 0; i < currentNames.length; i++) {
     if (i !== playerId && normalizePlayerName(currentNames[i]).toLowerCase() === norm.toLowerCase()) {
       return { valid: false, message: 'Tên này đã được người chơi khác sử dụng.' };
@@ -577,7 +576,7 @@ function validateUniquePlayerName(name, playerId, currentNames) {
   return { valid: true, normalized: norm };
 }
 
-// ---- QUIZ SYSTEM & 100 QUESTIONS (TỰ ĐỘNG ĐỌC questions.json) ----
+// ---- QUIZ SYSTEM & 100 QUESTIONS (TỰ ĐỘNG ĐỌC quizz_2.json / questions.json) ----
 let quizBank = [];
 let quizSessionActive = false;
 let consecutiveCorrect = 0;
@@ -587,7 +586,7 @@ let usedQuestionIds = new Set();
 let baseGameScore = 10; // Điểm gốc mặc định mỗi trận
 
 async function loadQuizData() {
-  for (const file of ['questions.json', 'quizz.json', 'quiz-data.json']) {
+  for (const file of ['quizz_2.json', 'questions.json', 'quizz.json', 'quiz-data.json']) {
     try {
       const res = await fetch(file + '?v=' + Date.now());
       if (!res.ok) continue;
@@ -625,7 +624,6 @@ async function startQuizSession(isWinner) {
 function showNextQuizQuestion() {
   if (consecutiveCorrect >= 3 || quizCompleted) return;
 
-  // Lọc câu hỏi chưa dùng
   const available = quizBank.filter(q => !usedQuestionIds.has(q.id));
   if (available.length === 0) {
     usedQuestionIds.clear();
@@ -635,9 +633,7 @@ function showNextQuizQuestion() {
   const q = available[Math.floor(Math.random() * available.length)];
   usedQuestionIds.add(q.id);
 
-  // Xáo trộn đáp án mà vẫn giữ đúng đáp án chính xác
   const originalOptions = q.options.map((opt, idx) => ({ text: opt, isCorrect: idx === q.answer }));
-  // Shuffle options
   for (let i = originalOptions.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [originalOptions[i], originalOptions[j]] = [originalOptions[j], originalOptions[i]];
@@ -697,10 +693,8 @@ function handleQuizAnswer(selectedIndex, btnElement) {
         finalizeMatchScore((turn ^ 1) === (seat >= 0 ? seat : (turn ^ 1)), true);
       }, 1200);
     } else {
-      // Chờ 1.2s rồi qua câu tiếp theo hoặc kết thúc nếu sai
       setTimeout(() => {
         if (!isCorrect) {
-          // Sai chuỗi -> kết thúc quiz session với kết quả không đạt chuỗi
           quizCompleted = true;
           $('quiz-modal').hidden = true;
           finalizeMatchScore((turn ^ 1) === (seat >= 0 ? seat : (turn ^ 1)), false);
@@ -722,7 +716,7 @@ function finalizeMatchScore(isWinner, streakAchieved) {
 
   if (isWinner) {
     if (streakAchieved) {
-      finalScore = baseGameScore * 1.5; // Thêm 50%
+      finalScore = baseGameScore * 1.5;
       reportText = `🎉 CHIẾN THẮNG & ĐẠT CHUỖI QUIZ! Điểm gốc: ${baseGameScore} → Tổng điểm (x1.5): ${finalScore}`;
     } else {
       finalScore = baseGameScore;
@@ -741,11 +735,11 @@ function finalizeMatchScore(isWinner, streakAchieved) {
       shieldActive = false;
       reportText = `🛡️ KHIÊN BẢO HỘ KÍCH HOẠT! Bạn không bị trừ ELO.`;
     } else if (streakAchieved) {
-      finalScore = Math.max(0, baseGameScore - 0.5); // Giảm phạt còn 0.5đ
+      finalScore = Math.max(0, baseGameScore - 0.5);
       userElo = Math.max(0, userElo - 0.5);
       reportText = `🛡️ THUT NHƯNG CỨU TRỢ THÀNH CÔNG! Phạt cố định chỉ còn: 0.5đ (Điểm cuối: ${finalScore})`;
     } else {
-      finalScore = baseGameScore - 2; // Phạt chuẩn thông thường
+      finalScore = baseGameScore - 2;
       userElo = Math.max(0, userElo - 2);
       reportText = `💔 THẤT BẠI. Áp dụng mức phạt chuẩn. Điểm cuối: ${finalScore}`;
     }
@@ -816,7 +810,6 @@ function fit(){const[x0,y0,x1,y1]=bbox();cam={x:(x0+x1)/2,y:(y0+y1)/2,z:Math.max
 
 function newGame(){
   const n=parseInt($('n').value, 10);
-  // Cố định node chỉ nhận 4, 5, 6
   const validSpots = [4, 5, 6].includes(n) ? n : 5;
   spots=[];lines=[];hist=[];over=tout=false;cur=null;rz=ended=warned=false;lsec=-1;fx.length=0;hintPath=null;setPh('play');
   lim=Math.round(Math.max(0,+$('tm').value||0)*60000);clk=[lim,lim];turn=Math.random()<.5?0:1;
@@ -1123,16 +1116,20 @@ function wire(c){
     send({t:'name',i:me,v:names[me]});
     if(me==0)send({t:'cfg',n:$('n').value,tm:$('tm').value});
 
-    // Ghép trận tự động / thách đấu -> Bỏ qua bước Ready, tự động đếm ngược vào ván luôn
+    // Đồng bộ bắt đầu trận ngay không cần bấm Ready nếu là ghép trận tự động / thách đấu
     if (autoStartMatch) {
       autoStartMatch = false;
-      rdy = [true, true];
-      lobbyUI();
-      if (me == 0) {
+      if (me == 1) {
+        // Bên Join báo cho Host biết mình đã mở kênh xong để Host bắt đầu đếm ngược
+        send({ t: 'auto_ready' });
+      } else {
+        // Nếu Host mở kênh sau thì tự đếm ngược luôn
         setTimeout(() => {
-          send({ t: 'count' });
-          runCount();
-        }, 300);
+          if (ph === 'lobby') {
+            send({ t: 'count' });
+            runCount();
+          }
+        }, 400);
       }
     }
   };
@@ -1149,6 +1146,13 @@ function recv(e){
         names[m.i] = valCheck.normalized;
         $('p'+m.i).value = names[m.i];
         info();
+      }
+    }
+    else if(m.t=='auto_ready'){
+      // Nhận tín hiệu từ người chơi 2 sau khi ghép trận tự động -> vào thẳng trận luôn
+      if (ph === 'lobby' && me == 0) {
+        send({ t: 'count' });
+        runCount();
       }
     }
     else if(m.t=='rdy'&&(m.i===0||m.i===1)&&m.i!=seat)setRdy(m.i,!!m.v);
