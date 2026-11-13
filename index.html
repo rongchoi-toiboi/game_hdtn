@@ -78,7 +78,7 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 .lb-table th,.lb-table td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}
 .lb-table th{color:var(--mut);font-size:.8rem;text-transform:uppercase}
 .lb-table tr.me{background:color-mix(in srgb,var(--p2) 12%,transparent);font-weight:700}
-/* Quiz Modal bổ sung */
+/* Modal trắc nghiệm */
 #quizModal{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
 #quizModal[hidden]{display:none}
 .quiz-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;width:100%;max-width:560px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:16px}
@@ -99,7 +99,7 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 <div class="match-bar"><label for="pName"><b>Tên của bạn:</b></label><input type="text" id="pName" maxlength="16" autocomplete="off" placeholder="Tên hiển thị"><button id="qb" class="btn-auto" disabled>⚡ Tìm trận nhanh</button><span id="sv"></span><span class="sp"></span><span>Elo của bạn: <b id="myElo">…</b></span></div>
 <p id="qm" role="status"></p>
 <small>Tìm trận nhanh: ghép tự động qua máy chủ, 3 chấm, 5 phút mỗi người, có tính điểm Elo. Chơi qua “Play on two devices” (P2P) thì không tính Elo.</small>
-<p id="lm"></p><div class="lrow"><label>Spots <select id="n"><option value="4" selected>4 Node</option><option value="5">5 Node</option><option value="6">6 Node</option></select></label><label>Minutes per player <input id="tm" type="number" min="0" max="999" step="any" value="5" inputmode="decimal" aria-label="Minutes per player, 0 for no limit"></label><small>0 = no time limit</small></div><p>Rules lock once the match starts.</p><div id="cd" hidden></div></section>
+<p id="lm"></p><div class="lrow"><label>Spots <select id="n"><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label><label>Minutes per player <input id="tm" type="number" min="0" max="999" step="any" value="5" inputmode="decimal" aria-label="Minutes per player, 0 for no limit"></label><small>0 = no time limit</small></div><p>Rules lock once the match starts.</p><div id="cd" hidden></div></section>
 <section class="lob" id="lb"><h2>🏆 Bảng xếp hạng Elo (Top 10)</h2>
 <table class="lb-table"><thead><tr><th>#</th><th>Tên người chơi</th><th>Điểm Elo</th><th>Số ván</th></tr></thead><tbody id="lbBody"><tr><td colspan="4">Chưa có dữ liệu</td></tr></tbody></table>
 <small>Người chơi mới bắt đầu với 500 điểm Elo. Thắng ván tìm trận nhanh được cộng điểm, thua bị trừ điểm.</small></section>
@@ -127,7 +127,7 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 </details></details>
 </main>
 
-<!-- Modal Thử thách trắc nghiệm bổ sung -->
+<!-- Modal Thử thách trắc nghiệm -->
 <div id="quizModal" hidden>
   <div class="quiz-card">
     <h2 id="qTitle">THỬ THÁCH KIẾN THỨC</h2>
@@ -197,9 +197,7 @@ function bbox(){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;const a=(x,y)=>{x0=Math.min(x0
 function fit(){const[x0,y0,x1,y1]=bbox();cam={x:(x0+x1)/2,y:(y0+y1)/2,z:Math.max(.15,Math.min(1.5,.85*Math.min(W/(x1-x0+90),H/(y1-y0+90))))};draw()}
 
 function newGame(pre){if(!pre)cancelSearch();
-  const rawN=pre?pre.spots.length:parseInt($('n').value,10);
-  const n=[4,5,6].includes(rawN)?rawN:4;
-  spots=[];lines=[];hist=[];over=tout=false;cur=null;rz=fo=ended=warned=false;eloMsg='';lsec=-1;fx.length=0;setPh('play');
+  const n=pre?pre.spots.length:+$('n').value;spots=[];lines=[];hist=[];over=tout=false;cur=null;rz=fo=ended=warned=false;eloMsg='';lsec=-1;fx.length=0;setPh('play');
   lim=Math.round(Math.max(0,+$('tm').value||0)*60000);clk=[lim,lim];turn=pre?pre.turn:Math.random()<.5?0:1;
   if(pre)pre.spots.forEach(p=>spots.push({x:p.x,y:p.y,d:0}));
   for(let t=0;spots.length<n&&t<2000;t++){
@@ -525,7 +523,7 @@ async function hostRoom(){
   catch(e){closeRel();ns('Could not reach the relay. Use manual connect below.')}
 }
 function joinRoom(raw){
-  raw=String(raw||'');const m=raw.match(/room=([A-Za-z0-9]{6})/),c=(m?m[1]:raw).toUpperCase().replace(/[^A-Z0-9]/g,`");
+  raw=String(raw||'');const m=raw.match(/room=([A-Za-z0-9]{6})/),c=(m?m[1]:raw).toUpperCase().replace(/[^A-Z0-9]/g,'');
   if(c.length!==6){ns('Room codes have 6 characters.');return}
   closeRel();hideRoom();setupJoin();room=c;let got=false;$('rin').value=c;
   ns('Looking for room '+c+'…');
@@ -576,11 +574,9 @@ $('pName').onchange=()=>{
 };
 $('qb').onclick=()=>{
   if(!socket||!socket.connected)return;
-  const nodes=parseInt($('n').value,10);
-  if(![4,5,6].includes(nodes)){alert('Số lượng Node không hợp lệ!');return;}
   if(!searching){
     $('pName').onchange();searching=true;qmsg('🔍 Đang tìm đối thủ trên máy chủ…');
-    socket.emit('find_match',{pid,name:myName(),nodes});
+    socket.emit('find_match',{pid,name:myName(),nodes:+$('n').value});
   }else{searching=false;socket.emit('cancel_match');qmsg('')}
   qmUI();
 };
