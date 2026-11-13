@@ -10,28 +10,52 @@ const io = new Server(server);
 app.use(express.static(__dirname));
 
 let waitingPlayer = null; // Lưu người chơi đang chờ tìm trận
-const blockedUntil = new Map(); // Lưu thời hạn Bảy chọ (socket.id -> timestamp)
+const players = new Map(); // Lưu thông tin Leaderboard & Bảy chọ (socket.id -> { id, name, elo, blockedUntil })
+
+function emitLeaderboard() {
+    const list = Array.from(players.values())
+        .sort((a, b) => b.elo - a.elo)
+        .map((p, idx) => ({
+            rank: idx + 1,
+            id: p.id,
+            name: p.name,
+            elo: p.elo,
+            blockedUntil: p.blockedUntil || 0
+        }));
+    io.emit('leaderboard_update', list);
+}
 
 io.on('connection', (socket) => {
     console.log('Có người chơi kết nối:', socket.id);
+    players.set(socket.id, { id: socket.id, name: 'Player_' + socket.id.slice(0, 4), elo: 100, blockedUntil: 0 });
+    emitLeaderboard();
 
-    // Kích hoạt Bảy chọ (chặn thách đấu 3 phút)
-    socket.on('activate_bay_cho', () => {
-        const until = Date.now() + 3 * 60 * 1000;
-        blockedUntil.set(socket.id, until);
-        io.emit('bay_cho_status', { id: socket.id, until });
+    // Cập nhật tên, điểm ELO hoặc trạng thái Bảy chọ lên Leaderboard
+    socket.on('sync_player', (data) => {
+        const p = players.get(socket.id);
+        if (!p || !data) return;
+        if (data.name) p.name = String(data.name).slice(0, 20);
+        if (typeof data.elo === 'number') p.elo = data.elo;
+        if (typeof data.blockedUntil === 'number') p.blockedUntil = data.blockedUntil;
+        emitLeaderboard();
     });
 
     // Kiểm tra chặn thách đấu khi có người thách đấu
     socket.on('challenge_player', (data) => {
         if (!data || !data.targetId) return;
-        const until = blockedUntil.get(data.targetId) || 0;
-        if (until > Date.now()) {
-            const left = Math.ceil((until - Date.now()) / 1000);
-            socket.emit('challenge_blocked', { message: `Người chơi đang bật Bảy chọ! Chặn thách đấu còn ${left}s.` });
+        const target = players.get(data.targetId);
+        if (!target) return;
+        if (target.blockedUntil > Date.now()) {
+            const left = Math.ceil((target.blockedUntil - Date.now()) / 1000);
+            socket.emit('challenge_blocked', { message: `🚫 ${target.name} đang bật Bảy chọ! Chặn thách đấu còn ${left}s.` });
             return;
         }
-        io.to(data.targetId).emit('incoming_challenge', { fromId: socket.id, room: data.room });
+        const sender = players.get(socket.id);
+        io.to(data.targetId).emit('incoming_challenge', {
+            fromId: socket.id,
+            fromName: sender ? sender.name : 'Đối thủ',
+            room: data.room
+        });
     });
 
     // Khi người chơi bấm tìm trận ngẫu nhiên
@@ -62,7 +86,8 @@ io.on('connection', (socket) => {
         if (waitingPlayer === socket) {
             waitingPlayer = null;
         }
-        blockedUntil.delete(socket.id);
+        players.delete(socket.id);
+        emitLeaderboard();
         console.log('Người chơi ngắt kết nối:', socket.id);
     });
 });
