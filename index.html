@@ -1,94 +1,39 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sprouts</title>
+<title>Sprouts Online</title>
 <script src="/socket.io/socket.io.js"></script>
 <style>
-:root{--desk:#e2e9ee;--paper:#fbfdfe;--grid:#dde8ee;--ink:#1c2b36;--mut:#5d6f7b;--p1:#d6336c;--p2:#1c7ed6;--gold:#f59f00;--purp:#7950f2;--teal:#0ca678;--card:#fff;--line:#c9d6de;--sh:0 2px 6px rgba(28,43,54,.06),0 10px 28px rgba(28,43,54,.09);--f:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
-@media all{:root[data-theme=dark]{color-scheme:dark;--desk:#0d161d;--paper:#14232e;--grid:#1d3240;--ink:#e8f0f5;--mut:#8ea2af;--p1:#ff6b9a;--p2:#5fb0ff;--gold:#fcc419;--purp:#9775fa;--teal:#20c997;--card:#182934;--line:#27414f;--sh:0 2px 6px rgba(0,0,0,.35),0 10px 28px rgba(0,0,0,.35)}}
+:root{--desk:#e2e9ee;--paper:#fbfdfe;--grid:#dde8ee;--ink:#1c2b36;--mut:#5d6f7b;--p1:#d6336c;--p2:#1c7ed6;--card:#fff;--line:#c9d6de;--sh:0 1px 2px rgba(28,43,54,.06),0 8px 24px rgba(28,43,54,.08);--f:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+@media all{:root[data-theme=dark]{color-scheme:dark;--desk:#0d161d;--paper:#14232e;--grid:#1d3240;--ink:#e8f0f5;--mut:#8ea2af;--p1:#ff6b9a;--p2:#5fb0ff;--card:#182934;--line:#27414f;--sh:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3)}}
 *{box-sizing:border-box}
-body{margin:0;padding:clamp(12px,3vw,32px);background:var(--desk);color:var(--ink);font:15px/1.5 var(--f);-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
+body{margin:0;padding:clamp(12px,3vw,32px);background:var(--desk);color:var(--ink);font:15px/1.5 var(--f);-webkit-font-smoothing:antialiased}
 main{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
-header{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:var(--sh)}
-h1{font:700 1.75rem/1 var(--f);margin:0;letter-spacing:-.03em;background:linear-gradient(135deg,var(--p1),var(--p2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-header p{margin:0;color:var(--mut);font-size:.88rem}
-.elo-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:99px;background:color-mix(in srgb,var(--gold) 15%,var(--paper));border:1px solid color-mix(in srgb,var(--gold) 50%,var(--line));font-weight:700;font-size:.88rem;color:var(--ink)}
-.elo-pill b{color:var(--gold);font-variant-numeric:tabular-nums}
-
-/* Thanh Đổi Tên Duy Nhất & Nút Tìm Trận Lớn */
-.hero-bar{display:grid;grid-template-columns:1fr 1.2fr;gap:12px}
-@media(max-width:680px){.hero-bar{grid-template-columns:1fr}}
-.name-box{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:var(--sh);display:flex;flex-direction:column;justify-content:center;gap:6px}
-.name-box label{font-size:.8rem;font-weight:700;color:var(--mut);display:flex;justify-content:space-between;align-items:center}
-.name-row{display:flex;gap:8px;align-items:center}
-.name-row input{flex:1;min-width:0;padding:8px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-weight:700;outline:none;transition:border-color .2s}
-.name-row input:focus{border-color:var(--p2)}
-.name-err{font-size:.76rem;color:#e03131;font-weight:600;min-height:1.1em}
-
-.match-box{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:var(--sh);display:flex;flex-direction:column;justify-content:center;gap:8px}
-#btn-find-match{
-  width:100%;padding:14px 20px;border-radius:12px;border:0;
-  background:linear-gradient(135deg,var(--p1),var(--p2));
-  color:#fff;font-size:1.08rem;font-weight:800;letter-spacing:.01em;
-  box-shadow:0 6px 20px color-mix(in srgb,var(--p1) 30%,transparent);
-  display:flex;align-items:center;justify-content:center;gap:10px;
-  transition:transform .15s,box-shadow .15s,filter .15s;
-}
-#btn-find-match:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.06);box-shadow:0 8px 24px color-mix(in srgb,var(--p2) 38%,transparent)}
-#btn-find-match.searching{background:linear-gradient(135deg,#f59f00,#e8590c);animation:pulseMatch 1.4s infinite}
-@keyframes pulseMatch{0%,100%{box-shadow:0 0 0 0 rgba(245,159,0,.5)}50%{box-shadow:0 0 0 8px rgba(245,159,0,0)}}
-.match-sub{font-size:.8rem;color:var(--mut);text-align:center}
-
-/* ELO Power-ups Panel */
-.elo-shop{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:10px}
-.elo-shop-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:.86rem;font-weight:700}
-.elo-badges{display:flex;gap:6px;flex-wrap:wrap}
-.ebadge{font-size:.75rem;padding:2px 9px;border-radius:99px;font-weight:700;animation:pop .25s ease}
-.eb-star{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold);border:1px solid var(--gold)}
-.eb-bc{background:color-mix(in srgb,var(--purp) 18%,transparent);color:var(--purp);border:1px solid var(--purp)}
-.eb-sh{background:color-mix(in srgb,var(--teal) 18%,transparent);color:var(--teal);border:1px solid var(--teal)}
-.shop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:8px}
-.sitem{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:9px 11px;border-radius:11px;border:1px solid var(--line);background:var(--paper);text-align:left;transition:transform .15s,border-color .15s,box-shadow .15s}
-.sitem:hover:not(:disabled){transform:translateY(-2px);border-color:var(--ac,var(--ink));box-shadow:0 4px 12px color-mix(in srgb,var(--ac,var(--ink)) 16%,transparent)}
-.sitem.on{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 10%,var(--paper))}
-.sitem-top{display:flex;width:100%;justify-content:space-between;align-items:center;font-weight:700;font-size:.84rem}
-.sitem-cost{font-size:.73rem;font-weight:700;padding:1px 7px;border-radius:99px;background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac)}
-.sitem-desc{font-size:.74rem;color:var(--mut);line-height:1.3;font-weight:400}
-
-/* Leaderboard Panel */
-.lb-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;box-shadow:var(--sh)}
-.lb-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;font-weight:700;font-size:1rem}
-.lb-table{width:100%;border-collapse:collapse;font-size:.88rem}
-.lb-table th{text-align:left;color:var(--mut);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
-.lb-table td{padding:8px 8px;border-bottom:1px solid color-mix(in srgb,var(--line) 50%,transparent)}
-.lb-table tr:last-child td{border-bottom:none}
-.lb-rank{font-weight:800;width:3.5ch}
-.lb-rank-1{color:#f59f00}.lb-rank-2{color:#868e96}.lb-rank-3{color:#d9480f}
-.lb-elo{font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
-.lb-btn{padding:4px 11px;font-size:.78rem;border-radius:8px}
-
+header{display:flex;align-items:baseline;gap:6px 16px;flex-wrap:wrap}
+h1{font:700 1.75rem/1 var(--f);margin:0;letter-spacing:-.03em}
+header p{margin:0;color:var(--mut);font-size:.9rem}
 .players{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.pl{display:flex;align-items:center;gap:10px;padding:11px 15px;background:var(--card);border:1.5px solid var(--line);border-radius:13px;box-shadow:var(--sh);transition:border-color .25s,box-shadow .25s}
+.pl{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border:1px solid var(--line);border-radius:12px;transition:border-color .25s,box-shadow .25s}
 .pl i{width:14px;height:14px;border-radius:50%;background:var(--c);flex:none}
 .pl input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font:inherit;font-weight:700}
 .pl em{font-style:normal;font-size:.75rem;font-weight:700;padding:1px 9px;border-radius:99px;background:var(--c);color:var(--paper);white-space:nowrap}
 .pl.on,.pl:focus-within{border-color:var(--c)}
-.pl.on{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 18%,transparent)}
+.pl.on{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 16%,transparent)}
 .pl input:disabled{opacity:.75}
-#st{min-height:1.5em;padding:6px 12px;border-radius:10px;background:color-mix(in srgb,var(--card) 75%,transparent);border:1px solid var(--line)}
-.sheet{position:relative;background:var(--paper);border:1.5px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:8px}
+#st{min-height:1.5em}
+.sheet{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:8px}
 canvas{display:block;width:100%;aspect-ratio:3/2;touch-action:none;border-radius:10px;background:var(--paper);cursor:grab}
 .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .bar label{display:flex;align-items:center;gap:6px;color:var(--mut);font-size:.9rem}
 .sp{flex:1}
-select,input[type=number],button{font:inherit;font-weight:500;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:9px;padding:6px 14px;cursor:pointer;transition:border-color .15s,background .15s,opacity .15s}
+select,input[type=number],button{font:inherit;font-weight:500;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 14px;cursor:pointer;transition:border-color .15s,background .15s,opacity .15s}
 input[type=number]{width:5.2em;padding:6px 8px;cursor:text;text-align:center;-moz-appearance:textfield}input[type=number]::-webkit-inner-spin-button{opacity:.5}input:disabled,select:disabled{opacity:.55;cursor:default}
 button:hover:not(:disabled),select:hover{border-color:var(--ink)}
 button.pri{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 button:disabled{opacity:.4;cursor:default}
 :focus-visible{outline:3px solid var(--p2);outline-offset:2px}
-details{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:10px 16px;color:var(--mut);box-shadow:var(--sh)}
-summary{cursor:pointer;color:var(--ink);font-weight:600}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 16px;color:var(--mut)}
+summary{cursor:pointer;color:var(--ink);font-weight:500}
 details p{max-width:70ch}
 textarea{display:block;width:100%;height:4.5em;margin:4px 0 10px;padding:6px 8px;font:12px/1.3 ui-monospace,monospace;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;resize:vertical}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px}
@@ -102,7 +47,7 @@ textarea{display:block;width:100%;height:4.5em;margin:4px 0 10px;padding:6px 8px
 .pl.on .clk{color:var(--ink)}.clk.low{color:#e03131!important;animation:bl 1s infinite}
 @keyframes bl{50%{opacity:.4}}
 @media(prefers-reduced-motion:reduce){.clk.low{animation:none}.lr span{transition:none}}
-body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,body[data-ph=count] .bar,body[data-ph=play] #lobby,body[data-ph=play] #net,body[data-ph=play] #leaderboard-sec,body[data-ph=play] .hero-bar{display:none}
+body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,body[data-ph=count] .bar,body[data-ph=play] #lobby,body[data-ph=play] #net,body[data-ph=play] #lb{display:none}
 .lob{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:16px 20px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
 .lob h2{font:600 1.1rem/1 var(--f);margin:0}.lob p{margin:0;color:var(--mut);max-width:70ch;font-size:.9rem}.lob small{color:var(--mut);font-size:.8rem}
 .lrow{display:flex;flex-wrap:wrap;gap:18px}.lrow label{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:.9rem}
@@ -120,141 +65,43 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 #rcode{font-size:1.35rem;width:9ch;border-color:var(--ink)}
 #rin::placeholder{letter-spacing:.06em;font-weight:500}
 #net details{margin-top:8px}#net .row span{color:var(--mut)}
-
-/* Quiz Modal Styles */
-#quiz-modal {
-  position: absolute; inset: 0; z-index: 10;
-  background: color-mix(in srgb, var(--paper) 92%, rgba(0,0,0,0.2));
-  backdrop-filter: blur(5px);
-  display: flex; align-items: center; justify-content: center;
-  padding: 16px;
-}
-#quiz-modal[hidden] { display: none; }
-.quiz-card {
-  background: var(--card); border: 1px solid var(--line); border-radius: 16px;
-  box-shadow: var(--sh); width: 100%; max-width: 540px; padding: 24px;
-  display: flex; flex-direction: column; gap: 16px; animation: pop .3s cubic-bezier(.2,.7,.2,1) both;
-}
-.quiz-header { display: flex; justify-content: space-between; align-items: center; }
-.quiz-title { font: 700 1.2rem var(--f); margin: 0; color: var(--ink); }
-.quiz-progress { font-weight: 600; font-size: 0.9rem; padding: 2px 10px; border-radius: 99px; background: color-mix(in srgb, var(--p2) 15%, transparent); color: var(--p2); }
-.quiz-question { font-size: 1.05rem; font-weight: 600; margin: 0; line-height: 1.4; color: var(--ink); }
-.quiz-options { display: flex; flex-direction: column; gap: 10px; }
-.quiz-option {
-  text-align: left; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--line);
-  background: var(--paper); color: var(--ink); font: inherit; font-weight: 500; cursor: pointer;
-  transition: all .2s;
-}
-.quiz-option:hover:not(:disabled) { border-color: var(--p2); background: color-mix(in srgb, var(--p2) 6%, var(--paper)); }
-.quiz-option.correct { background: color-mix(in srgb, #2b8a3e 15%, var(--paper)); border-color: #2b8a3e; color: #2b8a3e; font-weight: 700; }
-.quiz-option.incorrect { background: color-mix(in srgb, #e03131 15%, var(--paper)); border-color: #e03131; color: #e03131; font-weight: 700; }
-.quiz-feedback { font-weight: 600; min-height: 1.5em; text-align: center; }
+.match-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--paper);padding:12px;border-radius:10px;border:1px solid var(--line)}
+.match-bar input[type=text]{padding:8px 12px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:700;width:14ch}
+.match-bar #sv{color:var(--mut);font-size:.85rem}
+.btn-auto{background:#16a34a;color:#fff;font-weight:700;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;transition:background .2s}
+.btn-auto:hover:not(:disabled){background:#15803d}
+.btn-auto.btn-cancel-search{background:#dc2626}
+.btn-auto.btn-cancel-search:hover:not(:disabled){background:#b91c1c}
+#qm{font-weight:600;color:var(--p2);min-height:1.2em}
+.elo{font-size:.75rem;font-weight:600;color:var(--mut);white-space:nowrap;font-variant-numeric:tabular-nums}
+.lb-table{width:100%;border-collapse:collapse}
+.lb-table th,.lb-table td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}
+.lb-table th{color:var(--mut);font-size:.8rem;text-transform:uppercase}
+.lb-table tr.me{background:color-mix(in srgb,var(--p2) 12%,transparent);font-weight:700}
+/* Modal trắc nghiệm */
+#quizModal{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+#quizModal[hidden]{display:none}
+.quiz-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;width:100%;max-width:560px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:14px}
+.quiz-card h2{margin:0;font-size:1.35rem;color:var(--ink)}
+.quiz-options{display:flex;flex-direction:column;gap:10px}
+.quiz-opt-btn{text-align:left;padding:12px 16px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;font-weight:600;transition:all .15s}
+.quiz-opt-btn:hover:not(:disabled){border-color:var(--p2);background:color-mix(in srgb,var(--p2) 10%,transparent)}
 </style></head><body data-ph="lobby"><main>
-<header>
-  <h1>Sprouts</h1>
-  <p>Draw curves, grow new spots, and leave your opponent without a move.</p>
-  <span class="sp"></span>
-  <span class="elo-pill" title="Điểm ELO hiện tại của bạn">🏆 ELO: <b id="elo-val">100</b></span>
-  <button id="mu"></button>
-  <button id="th"></button>
-</header>
-
-<!-- Thanh Đổi Tên Duy Nhất & Nút Tìm Trận Ngẫu Nhiên Lớn -->
-<section class="hero-bar">
-  <div class="name-box">
-    <label for="my-name-input">
-      <span>✏️ Tên hiển thị của bạn (Duy nhất)</span>
-      <span style="font-weight:500">2–20 ký tự</span>
-    </label>
-    <div class="name-row">
-      <input id="my-name-input" maxlength="20" placeholder="Nhập tên của bạn..." autocomplete="off">
-      <button id="btn-save-name" class="pri">Lưu tên</button>
-    </div>
-    <div class="name-err" id="name-err"></div>
-  </div>
-
-  <div class="match-box">
-    <button id="btn-find-match">⚔️ TÌM TRẬN NGẪU NHIÊN</button>
-    <div class="match-sub" id="match-sub">Ghép cặp xong vào thẳng trận đấu (không cần bấm Ready)</div>
-  </div>
-</section>
-
-<!-- ELO Power-ups (Xài lúc nào cũng được nếu có đủ điểm ELO) -->
-<section class="elo-shop">
-  <div class="elo-shop-head">
-    <span>⚡ Đặc quyền ELO (Dùng bất cứ lúc nào khi đủ điểm)</span>
-    <div class="elo-badges" id="elo-badges"></div>
-  </div>
-  <div class="shop-grid">
-    <button class="sitem" id="btn-star" style="--ac:var(--gold)">
-      <div class="sitem-top"><span>⭐ Ngôi sao hi vọng</span><span class="sitem-cost">20 ELO</span></div>
-      <span class="sitem-desc">Đặt cược vào ván đấu, thắng thì <b>x2 ELO</b></span>
-    </button>
-    <button class="sitem" id="btn-baycho" style="--ac:var(--purp)">
-      <div class="sitem-top"><span>🚫 Bảy chọ</span><span class="sitem-cost">25 ELO</span></div>
-      <span class="sitem-desc">Chặn quyền thách đấu trong <b>3 phút</b></span>
-    </button>
-    <button class="sitem" id="btn-time" style="--ac:var(--p2)">
-      <div class="sitem-top"><span>⏳ Đồng hồ cát</span><span class="sitem-cost">15 ELO</span></div>
-      <span class="sitem-desc">Cộng ngay <b>+45 giây</b> vào đồng hồ lượt của bạn</span>
-    </button>
-    <button class="sitem" id="btn-hint" style="--ac:var(--p1)">
-      <div class="sitem-top"><span>🔮 Thấu thị</span><span class="sitem-cost">25 ELO</span></div>
-      <span class="sitem-desc">Gợi ý <b>1 nước đi hợp lệ</b> trên bàn cờ trong 4 giây</span>
-    </button>
-    <button class="sitem" id="btn-shield" style="--ac:var(--teal)">
-      <div class="sitem-top"><span>🛡️ Khiên bảo hộ</span><span class="sitem-cost">30 ELO</span></div>
-      <span class="sitem-desc">Miễn trừ điểm ELO nếu thua ván này</span>
-    </button>
-  </div>
-</section>
-
+<header><h1>Sprouts</h1><p>Draw curves, grow new spots, and leave your opponent without a move.</p><span class="sp"></span><button id="mu"></button><button id="th"></button></header>
 <section class="players">
-<div class="pl" id="c0" style="--c:var(--p1)"><i></i><input id="p0" maxlength="20" value="Player 1" aria-label="Player 1 name"><em id="t0" hidden></em><button class="rd" id="r0"></button><span class="clk" id="k0"></span></div>
-<div class="pl" id="c1" style="--c:var(--p2)"><i></i><input id="p1" maxlength="20" value="Player 2" aria-label="Player 2 name"><em id="t1" hidden></em><button class="rd" id="r1"></button><span class="clk" id="k1"></span></div>
+<div class="pl" id="c0" style="--c:var(--p1)"><i></i><input id="p0" maxlength="16" value="Player 1" aria-label="Player 1 name"><em id="t0" hidden></em><button class="rd" id="r0"></button><span class="elo" id="e0" hidden></span><span class="clk" id="k0"></span></div>
+<div class="pl" id="c1" style="--c:var(--p2)"><i></i><input id="p1" maxlength="16" value="Player 2" aria-label="Player 2 name"><em id="t1" hidden></em><button class="rd" id="r1"></button><span class="elo" id="e1" hidden></span><span class="clk" id="k1"></span></div>
 </section>
 <div id="st" role="status"></div>
-<section class="lob" id="lobby"><h2>Lobby</h2><p id="lm"></p><div class="lrow"><label>Spots <select id="n"><option value="4">4 Nodes</option><option value="5" selected>5 Nodes</option><option value="6">6 Nodes</option></select></label><label>Minutes per player <input id="tm" type="number" min="0" max="999" step="any" value="5" inputmode="decimal" aria-label="Minutes per player, 0 for no limit"></label><small>0 = no time limit</small></div><p>Rules lock once the match starts.</p><div id="cd" hidden></div></section>
-
-<!-- Bảng Xếp Hạng ELO (Leaderboard) -->
-<section class="lb-card" id="leaderboard-sec">
-  <div class="lb-head">
-    <span>📊 Bảng Xếp Hạng ELO (Leaderboard)</span>
-    <span style="font-size:.82rem;color:var(--mut);font-weight:500">Cập nhật trực tiếp</span>
-  </div>
-  <table class="lb-table">
-    <thead>
-      <tr>
-        <th>Hạng</th>
-        <th>Người chơi</th>
-        <th>Điểm ELO</th>
-        <th>Trạng thái</th>
-        <th>Thách đấu</th>
-      </tr>
-    </thead>
-    <tbody id="lb-body">
-      <tr><td colspan="5" style="color:var(--mut);text-align:center">Đang tải bảng xếp hạng...</td></tr>
-    </tbody>
-  </table>
-</section>
-
-<div class="sheet" id="sheet">
-  <canvas id="c"></canvas>
-  <div id="bn" hidden></div>
-  <div id="lot" hidden><div class="lr"><span id="l0" style="--c:var(--p1)"></span><span id="l1" style="--c:var(--p2)"></span></div></div>
-  <!-- Quiz Modal Overlay -->
-  <div id="quiz-modal" hidden>
-    <div class="quiz-card">
-      <div class="quiz-header">
-        <h3 id="q-mode-title" class="quiz-title">Thử thách Quiz</h3>
-        <span id="q-prog" class="quiz-progress">0/3</span>
-      </div>
-      <p id="q-text" class="quiz-question">Đang tải câu hỏi...</p>
-      <div id="q-options" class="quiz-options"></div>
-      <div id="q-fb" class="quiz-feedback"></div>
-    </div>
-  </div>
-</div>
+<section class="lob" id="lobby"><h2>Lobby</h2>
+<div class="match-bar"><label for="pName"><b>Tên của bạn:</b></label><input type="text" id="pName" maxlength="16" autocomplete="off" placeholder="Tên hiển thị"><button id="qb" class="btn-auto" disabled>⚡ Tìm trận nhanh</button><span id="sv"></span><span class="sp"></span><span>Elo của bạn: <b id="myElo">…</b></span></div>
+<p id="qm" role="status"></p>
+<small>Tìm trận nhanh: ghép tự động qua máy chủ, 3 chấm, 5 phút mỗi người, có tính điểm Elo. Chơi qua “Play on two devices” (P2P) thì không tính Elo.</small>
+<p id="lm"></p><div class="lrow"><label>Spots <select id="n"><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label><label>Minutes per player <input id="tm" type="number" min="0" max="999" step="any" value="5" inputmode="decimal" aria-label="Minutes per player, 0 for no limit"></label><small>0 = no time limit</small></div><p>Rules lock once the match starts.</p><div id="cd" hidden></div></section>
+<section class="lob" id="lb"><h2>🏆 Bảng xếp hạng Elo (Top 10)</h2>
+<table class="lb-table"><thead><tr><th>#</th><th>Tên người chơi</th><th>Điểm Elo</th><th>Số ván</th></tr></thead><tbody id="lbBody"><tr><td colspan="4">Chưa có dữ liệu</td></tr></tbody></table>
+<small>Người chơi mới bắt đầu với 500 điểm Elo. Thắng ván tìm trận nhanh được cộng điểm, thua bị trừ điểm.</small></section>
+<div class="sheet" id="sheet"><canvas id="c"></canvas><div id="bn" hidden></div><div id="lot" hidden><div class="lr"><span id="l0" style="--c:var(--p1)"></span><span id="l1" style="--c:var(--p2)"></span></div></div></div>
 <div class="bar">
 <span class="sp"></span><button id="zo" title="Zoom out" aria-label="Zoom out">−</button><button id="zi" title="Zoom in" aria-label="Zoom in">+</button><button id="ft" title="Fit everything in view">Fit</button><button id="un">Undo</button><button id="nw" class="pri">New game</button>
 </div>
@@ -277,480 +124,32 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 <label for="i">Code received</label><textarea id="i" placeholder="Paste the invite or reply here"></textarea><div class="row"><button id="pa">Paste</button><button id="go" disabled>Connect</button></div>
 </details></details>
 </main>
+
+<!-- Modal Thử thách trắc nghiệm -->
+<div id="quizModal" hidden>
+  <div class="quiz-card">
+    <h2>🧠 Thử thách kiến thức sau trận</h2>
+    <p id="qResultBanner" style="font-weight:700;margin:0;color:var(--p2);"></p>
+    <div id="qProgress" style="font-size:0.9rem;font-weight:600;color:var(--mut);">Câu 1/3</div>
+    <p id="qContent" style="font-weight:600;margin:0;font-size:1.05rem;"></p>
+    <div class="quiz-options" id="qOptions">
+      <button class="quiz-opt-btn" data-key="A"></button>
+      <button class="quiz-opt-btn" data-key="B"></button>
+      <button class="quiz-opt-btn" data-key="C"></button>
+      <button class="quiz-opt-btn" data-key="D"></button>
+    </div>
+  </div>
+</div>
+
 <script>
 const $=id=>document.getElementById(id),cv=$('c'),g=cv.getContext('2d');
+const socket=typeof io!=='undefined'?io({transports:['websocket','polling'],reconnectionDelayMax:5000}):null;
 const W=900,H=600,R=11,D=2;cv.width=W*D;cv.height=H*D;
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim(),pc=p=>css(p?'--p2':'--p1');
 let spots,lines,turn,over,hist,cur,dc,pc2,go=false,tout=false,lim=0,clk=[0,0],last=0,lt=0,hov=-1,me=-1,seat=-1,run=false,fc=0,pan=null,pv=null,cam={x:0,y:0,z:1};
 const names=['Player 1','Player 2'],ptr=new Map();
-let ph='lobby',rdy=[false,false],cdt=0,rz=false,rzA=false,ended=false,warned=false,lsec=-1,bt=0,fxr=false,mute=false,ac;const fx=[];
+let ph='lobby',rdy=[false,false],cdt=0,rz=false,fo=false,srv=false,eloMsg='',rzA=false,ended=false,warned=false,lsec=-1,bt=0,fxr=false,mute=false,ac;const fx=[];
 try{mute=localStorage.getItem('sp-mute')=='1'}catch(e){}
-
-// ---- HỆ THỐNG ELO, LEADERBOARD, ĐỔI TÊN DUY NHẤT & TÌM TRẬN TỰ ĐỘNG ----
-const socket = typeof io !== 'undefined' ? io() : null;
-let userElo = 100;
-let myCustomName = '';
-try {
-  const s = localStorage.getItem('sp-elo');
-  if (s !== null && !isNaN(Number(s))) userElo = Math.max(0, Number(s));
-  const savedName = localStorage.getItem('sp-myname');
-  if (savedName) myCustomName = savedName;
-} catch(e) {}
-
-let hopeStarActive = false;   // Ngôi sao hi vọng (20 ELO -> x2 ELO khi thắng)
-let bayChoUntil = 0;          // Bảy chọ (25 ELO -> chặn thách đấu 3 phút)
-let shieldActive = false;     // Khiên bảo hộ (30 ELO -> miễn trừ ELO khi thua)
-let hintPath = null;          // Thấu thị (25 ELO -> gợi ý 1 nước đi hợp lệ)
-let latestLeaderboard = [];
-let isSearchingMatch = false;
-let autoStartMatch = false;   // Bỏ qua bước bấm Ready khi ghép trận tự động
-
-function applyMyNameLocally(validName) {
-  myCustomName = validName;
-  try { localStorage.setItem('sp-myname', validName); } catch(e) {}
-  $('my-name-input').value = validName;
-  const myIdx = seat >= 0 ? seat : 0;
-  names[myIdx] = validName;
-  $('p' + myIdx).value = validName;
-  info();
-  send({ t: 'name', i: myIdx, v: validName });
-}
-
-function submitNewName(raw) {
-  const myIdx = seat >= 0 ? seat : 0;
-  const check = validateUniquePlayerName(raw, myIdx, names);
-  if (!check.valid) {
-    $('name-err').textContent = check.message;
-    snd('bad');
-    return;
-  }
-  const dupOnline = latestLeaderboard.some(p => (!socket || p.id !== socket.id) && p.name.trim().toLowerCase() === check.normalized.toLowerCase());
-  if (dupOnline) {
-    $('name-err').textContent = `Tên "${check.normalized}" đã tồn tại trên hệ thống!`;
-    snd('bad');
-    return;
-  }
-  $('name-err').textContent = '';
-  applyMyNameLocally(check.normalized);
-  if (socket) {
-    socket.emit('sync_player', { name: check.normalized, elo: userElo, blockedUntil: bayChoUntil });
-  }
-  snd('ready');
-}
-
-$('btn-save-name').onclick = () => submitNewName($('my-name-input').value);
-$('my-name-input').onkeydown = e => { if (e.key === 'Enter') submitNewName($('my-name-input').value); };
-
-function syncEloAndServer() {
-  try { localStorage.setItem('sp-elo', String(userElo)); } catch(e) {}
-  $('elo-val').textContent = userElo;
-  const bcLeft = Math.max(0, Math.ceil((bayChoUntil - Date.now()) / 1000));
-
-  $('btn-star').disabled = hopeStarActive || userElo < 20;
-  $('btn-star').classList.toggle('on', hopeStarActive);
-
-  $('btn-baycho').disabled = bcLeft > 0 || userElo < 25;
-  $('btn-baycho').classList.toggle('on', bcLeft > 0);
-
-  $('btn-time').disabled = ph !== 'play' || !go || over || !lim || userElo < 15;
-  $('btn-hint').disabled = ph !== 'play' || !go || over || userElo < 25;
-
-  $('btn-shield').disabled = shieldActive || userElo < 30;
-  $('btn-shield').classList.toggle('on', shieldActive);
-
-  const b = $('elo-badges');
-  b.innerHTML = '';
-  if (hopeStarActive) b.innerHTML += `<span class="ebadge eb-star">⭐ Ngôi sao hi vọng (x2)</span>`;
-  if (bcLeft > 0) b.innerHTML += `<span class="ebadge eb-bc">🚫 Bảy chọ (${Math.floor(bcLeft/60)}:${String(bcLeft%60).padStart(2,'0')})</span>`;
-  if (shieldActive) b.innerHTML += `<span class="ebadge eb-sh">🛡️ Khiên bảo hộ</span>`;
-
-  if (socket) {
-    const myIdx = seat >= 0 ? seat : 0;
-    socket.emit('sync_player', { name: myCustomName || names[myIdx], elo: userElo, blockedUntil: bayChoUntil });
-  }
-}
-
-function renderLeaderboard(list) {
-  latestLeaderboard = list || latestLeaderboard;
-  const tbody = $('lb-body');
-  if (!latestLeaderboard.length) {
-    const myIdx = seat >= 0 ? seat : 0;
-    const bcLeft = Math.max(0, Math.ceil((bayChoUntil - Date.now()) / 1000));
-    tbody.innerHTML = `<tr>
-      <td class="lb-rank lb-rank-1">#1</td>
-      <td><b>${myCustomName || names[myIdx]}</b> <small style="color:var(--p2)">(Bạn)</small></td>
-      <td class="lb-elo">${userElo} ELO</td>
-      <td>${bcLeft > 0 ? `<span style="color:var(--purp);font-weight:600">🚫 Bảy chọ (${bcLeft}s)</span>` : '<span style="color:var(--teal)">● Sẵn sàng</span>'}</td>
-      <td>—</td>
-    </tr>`;
-    return;
-  }
-  tbody.innerHTML = '';
-  latestLeaderboard.forEach(p => {
-    const isMe = socket && p.id === socket.id;
-    const bcLeft = Math.max(0, Math.ceil((p.blockedUntil - Date.now()) / 1000));
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="lb-rank lb-rank-${p.rank}">#${p.rank}</td>
-      <td><b>${p.name}</b> ${isMe ? '<small style="color:var(--p2)">(Bạn)</small>' : ''}</td>
-      <td class="lb-elo">${p.elo} ELO</td>
-      <td>${bcLeft > 0 ? `<span style="color:var(--purp);font-weight:600">🚫 Bảy chọ (${bcLeft}s)</span>` : '<span style="color:var(--teal)">● Sẵn sàng</span>'}</td>
-      <td>${isMe ? '—' : `<button class="lb-btn ${bcLeft > 0 ? '' : 'pri'}" ${bcLeft > 0 ? 'disabled' : ''}>${bcLeft > 0 ? 'Đang chặn' : 'Thách đấu'}</button>`}</td>
-    `;
-    const btn = tr.querySelector('button');
-    if (btn && !btn.disabled) {
-      btn.onclick = async () => {
-        autoStartMatch = true;
-        if (!room) await hostRoom();
-        if (socket) socket.emit('challenge_player', { targetId: p.id, room });
-        ns(`Đã gửi lời thách đấu tới ${p.name}!`);
-      };
-    }
-    tbody.appendChild(tr);
-  });
-}
-
-// 1/ Ngôi sao hi vọng (20 ELO)
-$('btn-star').onclick = () => {
-  if (hopeStarActive || userElo < 20) return;
-  userElo -= 20;
-  hopeStarActive = true;
-  snd('chime');
-  banner('⭐ Đã bật Ngôi sao hi vọng (x2 ELO khi thắng)!', css('--gold'), 2000);
-  syncEloAndServer();
-};
-
-// 2/ Bảy chọ (25 ELO - Chặn thách đấu 3 phút)
-$('btn-baycho').onclick = () => {
-  if (bayChoUntil > Date.now() || userElo < 25) return;
-  userElo -= 25;
-  bayChoUntil = Date.now() + 3 * 60 * 1000;
-  snd('ready');
-  banner('🚫 Đã bật Bảy chọ (Chặn thách đấu 3 phút)!', css('--purp'), 2000);
-  syncEloAndServer();
-  renderLeaderboard();
-};
-
-// 3a/ Đồng hồ cát (15 ELO - +45s)
-$('btn-time').onclick = () => {
-  if (ph !== 'play' || !go || over || !lim || userElo < 15) return;
-  userElo -= 15;
-  const idx = seat >= 0 ? seat : turn;
-  clk[idx] += 45000;
-  snd('go');
-  clocks();
-  send({ t: 'state', s: pack() });
-  banner('⏳ +45 giây vào đồng hồ!', css('--p2'), 1600);
-  syncEloAndServer();
-};
-
-// 3b/ Thấu thị (25 ELO - Gợi ý 1 nước đi hợp lệ)
-$('btn-hint').onclick = () => {
-  if (ph !== 'play' || !go || over || userElo < 25) return;
-  let found = null;
-  for (let i = 0; i < spots.length && !found; i++) {
-    if (lives(spots[i]) <= 0) continue;
-    for (let j = i + 1; j < spots.length && !found; j++) {
-      if (lives(spots[j]) <= 0) continue;
-      const a = [spots[i].x, spots[i].y], b = [spots[j].x, spots[j].y];
-      let ok = true;
-      for (const l of lines) for (let k = 0; k < l.p.length - 1; k++) if (cross(a, b, l.p[k], l.p[k+1])) ok = false;
-      for (let s = 0; s < spots.length; s++) if (s !== i && s !== j && pd([spots[s].x, spots[s].y], a, b) < R + 4) ok = false;
-      if (ok) found = [a, b];
-    }
-  }
-  if (!found) { banner('Không tìm thấy nước nối thẳng!', '#e03131', 1500); return; }
-  userElo -= 25;
-  hintPath = found;
-  snd('sat');
-  draw();
-  syncEloAndServer();
-  setTimeout(() => { hintPath = null; draw(); }, 4000);
-};
-
-// 3c/ Khiên bảo hộ (30 ELO - Không trừ điểm nếu thua)
-$('btn-shield').onclick = () => {
-  if (shieldActive || userElo < 30) return;
-  userElo -= 30;
-  shieldActive = true;
-  snd('ready');
-  banner('🛡️ Đã bật Khiên bảo hộ!', css('--teal'), 1800);
-  syncEloAndServer();
-};
-
-// Nút Tìm Trận Ngẫu Nhiên
-function setSearchingUI(searching) {
-  isSearchingMatch = searching;
-  const btn = $('btn-find-match');
-  btn.classList.toggle('searching', searching);
-  btn.innerHTML = searching ? '⏳ ĐANG TÌM ĐỐI THỦ... (Bấm để hủy)' : '⚔️ TÌM TRẬN NGẪU NHIÊN';
-  $('match-sub').textContent = searching ? 'Đang quét người chơi trực tuyến...' : 'Ghép cặp xong vào thẳng trận đấu (không cần bấm Ready)';
-}
-
-$('btn-find-match').onclick = () => {
-  if (!socket || !socket.connected) {
-    $('match-sub').textContent = '⚠️ Chưa kết nối được máy chủ! Hãy chạy server (node server.js).';
-    snd('bad');
-    return;
-  }
-  if (isSearchingMatch) {
-    socket.emit('find_match', { cancel: true });
-    setSearchingUI(false);
-    return;
-  }
-  setSearchingUI(true);
-  snd('ready');
-  socket.emit('find_match', { nodes: parseInt($('n').value, 10) });
-};
-
-if (socket) {
-  socket.on('init_profile', d => {
-    if (myCustomName) {
-      socket.emit('sync_player', { name: myCustomName, elo: userElo, blockedUntil: bayChoUntil });
-    } else if (d && d.name) {
-      applyMyNameLocally(d.name);
-    }
-  });
-  socket.on('name_accepted', d => {
-    $('name-err').textContent = '';
-    applyMyNameLocally(d.name);
-  });
-  socket.on('name_rejected', d => {
-    $('name-err').textContent = d.message;
-    snd('bad');
-    if (d.fallback) applyMyNameLocally(d.fallback);
-  });
-  socket.on('leaderboard_update', renderLeaderboard);
-  socket.on('waiting', d => {
-    $('match-sub').textContent = d.message;
-  });
-  socket.on('search_cancelled', () => {
-    setSearchingUI(false);
-  });
-  socket.on('match_found', async d => {
-    setSearchingUI(false);
-    autoStartMatch = true;
-    snd('chime');
-    $('net').open = true;
-    $('match-sub').textContent = `🎉 Đã ghép trận! Đang vào bàn đấu ngay...`;
-    if (d.role === 'host') {
-      await hostRoomWithCode(d.roomCode);
-    } else {
-      setTimeout(() => joinRoom(d.roomCode), 400);
-    }
-  });
-  socket.on('error_message', d => {
-    setSearchingUI(false);
-    $('match-sub').textContent = d.message;
-  });
-  socket.on('challenge_blocked', d => { snd('bad'); banner(d.message, css('--purp'), 2500); });
-  socket.on('incoming_challenge', d => {
-    snd('chime');
-    if (confirm(`⚔️ ${d.fromName} thách đấu bạn! Vào trận ngay tại phòng ${d.room}?`)) {
-      autoStartMatch = true;
-      joinRoom(d.room);
-    }
-  });
-}
-
-setInterval(() => {
-  syncEloAndServer();
-  renderLeaderboard();
-}, 1000);
-
-// ---- UNIQUE PLAYER NAME & VALIDATION SYSTEM ----
-function normalizePlayerName(name) {
-  if (typeof name !== 'string') return '';
-  return name.trim().replace(/\s+/g, ' ');
-}
-
-function validateUniquePlayerName(name, playerId, currentNames) {
-  const norm = normalizePlayerName(name);
-  if (!norm || norm.length < 2 || norm.length > 20) return { valid: false, message: 'Tên phải từ 2 đến 20 ký tự và không được để trống.' };
-  
-  for (let i = 0; i < currentNames.length; i++) {
-    if (i !== playerId && normalizePlayerName(currentNames[i]).toLowerCase() === norm.toLowerCase()) {
-      return { valid: false, message: 'Tên này đã được người chơi khác sử dụng.' };
-    }
-  }
-  return { valid: true, normalized: norm };
-}
-
-// ---- QUIZ SYSTEM & 100 QUESTIONS (TỰ ĐỘNG ĐỌC quizz_2.json / questions.json) ----
-let quizBank = [];
-let quizSessionActive = false;
-let consecutiveCorrect = 0;
-let currentQuestion = null;
-let quizCompleted = false;
-let usedQuestionIds = new Set();
-let baseGameScore = 10; // Điểm gốc mặc định mỗi trận
-
-async function loadQuizData() {
-  for (const file of ['quizz_2.json', 'questions.json', 'quizz.json', 'quiz-data.json']) {
-    try {
-      const res = await fetch(file + '?v=' + Date.now());
-      if (!res.ok) continue;
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : (data && Array.isArray(data.questions) ? data.questions : []);
-      if (list.length > 0) {
-        quizBank = list;
-        console.log(`Đã tải ${quizBank.length} câu hỏi từ ${file}`);
-        return true;
-      }
-    } catch(e) {}
-  }
-  return false;
-}
-loadQuizData();
-
-async function startQuizSession(isWinner) {
-  if (quizBank.length === 0) {
-    await loadQuizData();
-  }
-  if (quizBank.length === 0) {
-    finalizeMatchScore(isWinner, false);
-    return;
-  }
-  quizSessionActive = true;
-  consecutiveCorrect = 0;
-  quizCompleted = false;
-  usedQuestionIds.clear();
-
-  $('quiz-modal').hidden = false;
-  $('q-mode-title').textContent = isWinner ? '🏆 Thưởng cho Người Thắng (3 câu đúng = +50% điểm)' : '🛡️ Cứu trợ Người Thua (3 câu đúng = giảm phạt còn 0.5đ)';
-  showNextQuizQuestion();
-}
-
-function showNextQuizQuestion() {
-  if (consecutiveCorrect >= 3 || quizCompleted) return;
-
-  const available = quizBank.filter(q => !usedQuestionIds.has(q.id));
-  if (available.length === 0) {
-    usedQuestionIds.clear();
-    available.push(...quizBank);
-  }
-
-  const q = available[Math.floor(Math.random() * available.length)];
-  usedQuestionIds.add(q.id);
-
-  const originalOptions = q.options.map((opt, idx) => ({ text: opt, isCorrect: idx === q.answer }));
-  for (let i = originalOptions.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [originalOptions[i], originalOptions[j]] = [originalOptions[j], originalOptions[i]];
-  }
-
-  const newCorrectIndex = originalOptions.findIndex(o => o.isCorrect);
-  currentQuestion = {
-    id: q.id,
-    question: q.question,
-    options: originalOptions.map(o => o.text),
-    answer: newCorrectIndex
-  };
-
-  $('q-prog').textContent = `${consecutiveCorrect}/3`;
-  $('q-text').textContent = currentQuestion.question;
-  $('q-fb').textContent = '';
-
-  const optContainer = $('q-options');
-  optContainer.innerHTML = '';
-  currentQuestion.options.forEach((optText, idx) => {
-    const btn = document.createElement('button');
-    btn.className = 'quiz-option';
-    btn.textContent = `${String.fromCharCode(65 + idx)}. ${optText}`;
-    btn.onclick = () => handleQuizAnswer(idx, btn);
-    optContainer.appendChild(btn);
-  });
-}
-
-function handleQuizAnswer(selectedIndex, btnElement) {
-  if (quizCompleted || !currentQuestion) return;
-
-  const allBtns = document.querySelectorAll('.quiz-option');
-  allBtns.forEach(b => b.disabled = true);
-
-  const isCorrect = selectedIndex === currentQuestion.answer;
-  if (isCorrect) {
-    btnElement.classList.add('correct');
-    consecutiveCorrect++;
-    snd('chime');
-    $('q-fb').textContent = 'Chính xác! 🎉';
-  } else {
-    btnElement.classList.add('incorrect');
-    allBtns[currentQuestion.answer].classList.add('correct');
-    consecutiveCorrect = 0;
-    snd('bad');
-    $('q-fb').textContent = 'Rất tiếc, chưa chính xác. Chuỗi đúng đã về 0! ❌';
-  }
-
-  $('q-prog').textContent = `${consecutiveCorrect}/3`;
-
-  setTimeout(() => {
-    if (consecutiveCorrect >= 3) {
-      quizCompleted = true;
-      $('q-fb').textContent = '✨ Hoàn thành xuất sắc 3 câu liên tiếp!';
-      setTimeout(() => {
-        $('quiz-modal').hidden = true;
-        finalizeMatchScore((turn ^ 1) === (seat >= 0 ? seat : (turn ^ 1)), true);
-      }, 1200);
-    } else {
-      setTimeout(() => {
-        if (!isCorrect) {
-          quizCompleted = true;
-          $('quiz-modal').hidden = true;
-          finalizeMatchScore((turn ^ 1) === (seat >= 0 ? seat : (turn ^ 1)), false);
-        } else {
-          showNextQuizQuestion();
-        }
-      }, 1000);
-    }
-  }, 1000);
-}
-
-let scoreFinalized = false;
-function finalizeMatchScore(isWinner, streakAchieved) {
-  if (scoreFinalized) return;
-  scoreFinalized = true;
-
-  let finalScore = baseGameScore;
-  let reportText = '';
-
-  if (isWinner) {
-    if (streakAchieved) {
-      finalScore = baseGameScore * 1.5;
-      reportText = `🎉 CHIẾN THẮNG & ĐẠT CHUỖI QUIZ! Điểm gốc: ${baseGameScore} → Tổng điểm (x1.5): ${finalScore}`;
-    } else {
-      finalScore = baseGameScore;
-      reportText = `🏆 CHIẾN THẮNG (Không hoàn thành chuỗi Quiz). Điểm gốc: ${baseGameScore}`;
-    }
-    if (hopeStarActive) {
-      finalScore *= 2;
-      hopeStarActive = false;
-      reportText += ` | ⭐ Ngôi sao hi vọng x2 = +${finalScore} ELO!`;
-    }
-    shieldActive = false;
-    userElo += finalScore;
-  } else {
-    hopeStarActive = false;
-    if (shieldActive) {
-      shieldActive = false;
-      reportText = `🛡️ KHIÊN BẢO HỘ KÍCH HOẠT! Bạn không bị trừ ELO.`;
-    } else if (streakAchieved) {
-      finalScore = Math.max(0, baseGameScore - 0.5);
-      userElo = Math.max(0, userElo - 0.5);
-      reportText = `🛡️ THUT NHƯNG CỨU TRỢ THÀNH CÔNG! Phạt cố định chỉ còn: 0.5đ (Điểm cuối: ${finalScore})`;
-    } else {
-      finalScore = baseGameScore - 2;
-      userElo = Math.max(0, userElo - 2);
-      reportText = `💔 THẤT BẠI. Áp dụng mức phạt chuẩn. Điểm cuối: ${finalScore}`;
-    }
-  }
-
-  syncEloAndServer();
-  banner(reportText, pc(turn^1), 4000);
-  console.log(reportText);
-}
-
-// ---- sound (synthesised, no files) ----
 function tone(f,d=.12,ty='sine',v=.15,at=0,f2){if(mute)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state=='suspended')ac.resume();const t=ac.currentTime+at,o=ac.createOscillator(),a=ac.createGain();o.type=ty;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);a.gain.setValueAtTime(.0001,t);a.gain.exponentialRampToValueAtTime(v,t+.01);a.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(a);a.connect(ac.destination);o.start(t);o.stop(t+d+.05)}catch(e){}}
 const SND={
  tick:()=>tone(900,.04,'square',.03),ready:()=>{tone(520,.08,'triangle',.15);tone(780,.1,'triangle',.15,.07)},unready:()=>tone(520,.1,'triangle',.12,0,330),
@@ -763,40 +162,27 @@ const SND={
  buzz:()=>tone(120,.5,'sawtooth',.15),bad:()=>tone(160,.08,'square',.06)};
 const snd=(k,a)=>SND[k]&&SND[k](a);
 function setMute(v){mute=v;try{localStorage.setItem('sp-mute',v?'1':'0')}catch(e){}$('mu').textContent=v?'🔇 Sound off':'🔊 Sound on'}
-
-// ---- visual effects ----
 function banner(t,c,ms=1100){const e=$('bn'),b=document.createElement('b');b.textContent=t;e.style.setProperty('--c',c||'');e.style.setProperty('--d',ms+'ms');e.replaceChildren(b);e.hidden=false;clearTimeout(bt);bt=setTimeout(()=>e.hidden=true,ms)}
 function burst(x,y,col,n=14,v=2.5,life=700,ring=1){const t=performance.now();if(ring)fx.push({x,y,col,t,life,ring:1});for(let i=0;i<n;i++){const a=Math.random()*6.283,s=v*(.4+Math.random());fx.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,col,t,life:life*(.6+Math.random()*.6)})}if(!fxr){fxr=true;requestAnimationFrame(fxStep)}}
 function fxStep(){const now=performance.now();for(let i=fx.length;i--;)if(now-fx[i].t>fx[i].life)fx.splice(i,1);draw();if(fx.length)requestAnimationFrame(fxStep);else fxr=false}
 function satFx(pd,col){let n=0;spots.forEach((s,i)=>{if(i<pd.length&&s.d>=3&&pd[i]<3){n++;burst(s.x,s.y,col)}});const m=spots[spots.length-1];burst(m.x,m.y,col,6,1.2,500,0);snd(n?'sat':'move')}
-function endFx(){
-  const w=turn^1,col=pc(w),mine=seat<0||seat==w;lt++;if(tout)snd('buzz');setTimeout(()=>snd(mine?'win':'lose'),tout?500:0);
-  banner((rz?'Resigned! ':tout?'Time is up! ':'')+names[w]+' wins!',col,3200);
-  for(let k=0;k<6;k++)setTimeout(()=>{const q=wld([Math.random()*W,Math.random()*H]);burst(q[0],q[1],col,18,3,1000)},k*180);
-  
-  // Kích hoạt Quiz sau trận đấu (Winner/Loser)
-  setTimeout(() => {
-    scoreFinalized = false;
-    const isWinner = (seat >= 0 ? seat === w : true);
-    startQuizSession(isWinner);
-  }, 1500);
-}
-
-// ---- lobby / ready / countdown ----
-function setPh(p){ph=p;document.body.dataset.ph=p;lobbyUI();syncEloAndServer()}
+function endFx(){const w=turn^1,col=pc(w),mine=seat<0||seat==w;lt++;if(srv&&socket)socket.emit('game_over',{winner:w,reason:rz?'resign':tout?'timeout':fo?'forfeit':'nomoves'});if(tout)snd('buzz');setTimeout(()=>snd(mine?'win':'lose'),tout?500:0);
+ banner((rz?'Resigned! ':tout?'Time is up! ':fo?'Opponent left! ':'')+names[w]+' wins!',col,3200);
+ for(let k=0;k<6;k++)setTimeout(()=>{const q=wld([Math.random()*W,Math.random()*H]);burst(q[0],q[1],col,18,3,1000)},k*180)}
+function setPh(p){ph=p;document.body.dataset.ph=p;lobbyUI()}
 function lobbyUI(){
-  const L=ph=='lobby';
+  const L=ph=='lobby';qmUI();
   [0,1].forEach(i=>{const b=$('r'+i);b.hidden=ph=='play';b.classList.toggle('on',rdy[i]);b.textContent=rdy[i]?'✓ Ready':'Ready?';b.disabled=!L||(seat>=0&&i!=seat);
     $('p'+i).disabled=!L||rdy[i]||(seat>=0&&i!=seat)});
   $('n').disabled=$('tm').disabled=!L||seat==1;
   $('lm').textContent=seat<0?'Both players press Ready to start. Playing on two devices? Open “Play on two devices” below.':'Online: you are '+names[seat]+' ('+(seat?'blue':'red')+'). '+(seat?'The host chooses the rules.':'You choose the rules.')
 }
 function setRdy(i,v){rdy[i]=v;snd(v?'ready':'unready');lobbyUI();info();if(ph=='lobby'&&rdy[0]&&rdy[1]&&seat!=1){send({t:'count'});runCount()}}
-function runCount(){
+function runCount(pre){
   setPh('count');const e=$('cd'),b=document.createElement('b');b.textContent='Match begin';e.replaceChildren(b);e.hidden=false;snd('chime');info();
-  cdt=setTimeout(()=>{e.hidden=true;if(seat!=1)newGame()},1100);
+  cdt=setTimeout(()=>{e.hidden=true;if(pre)newGame(pre);else if(seat!=1)newGame()},1100);
 }
-function toLobby(s){if(s)send({t:'lobby'});clearTimeout(cdt);lt++;$('lot').hidden=$('cd').hidden=$('bn').hidden=$('quiz-modal').hidden=true;spots=[];lines=[];hist=[];fx.length=0;over=tout=rz=go=false;cur=null;rdy=[false,false];hintPath=null;setPh('lobby');info();draw()}
+function toLobby(s){if(s){if(srv)leaveSrv(true);else send({t:'lobby'})}clearTimeout(cdt);lt++;$('lot').hidden=$('cd').hidden=$('bn').hidden=true;spots=[];lines=[];hist=[];fx.length=0;over=tout=rz=fo=go=false;eloMsg='';cur=null;rdy=[false,false];setPh('lobby');info();draw()}
 function resign(i){if(over||ph!='play')return;lt++;$('lot').hidden=true;go=true;turn=i;rz=true;over=true;tout=false;cur=null;info();draw()}
 const lives=s=>3-s.d,len=P=>P.reduce((t,q,i)=>i?t+Math.hypot(q[0]-P[i-1][0],q[1]-P[i-1][1]):0,0);
 const cr=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
@@ -808,16 +194,15 @@ function zoomAt(q,z){const w=wld(q);cam.z=Math.min(4,Math.max(.15,z));cam.x=w[0]
 function bbox(){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;const a=(x,y)=>{x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y)};spots.forEach(s=>a(s.x,s.y));lines.forEach(l=>l.p.forEach(q=>a(q[0],q[1])));return[x0,y0,x1,y1]}
 function fit(){const[x0,y0,x1,y1]=bbox();cam={x:(x0+x1)/2,y:(y0+y1)/2,z:Math.max(.15,Math.min(1.5,.85*Math.min(W/(x1-x0+90),H/(y1-y0+90))))};draw()}
 
-function newGame(){
-  const n=parseInt($('n').value, 10);
-  const validSpots = [4, 5, 6].includes(n) ? n : 5;
-  spots=[];lines=[];hist=[];over=tout=false;cur=null;rz=ended=warned=false;lsec=-1;fx.length=0;hintPath=null;setPh('play');
-  lim=Math.round(Math.max(0,+$('tm').value||0)*60000);clk=[lim,lim];turn=Math.random()<.5?0:1;
-  for(let t=0;spots.length<validSpots&&t<2000;t++){
+function newGame(pre){if(!pre)cancelSearch();
+  const n=pre?pre.spots.length:+$('n').value;spots=[];lines=[];hist=[];over=tout=false;cur=null;rz=fo=ended=warned=false;eloMsg='';lsec=-1;fx.length=0;setPh('play');
+  lim=Math.round(Math.max(0,+$('tm').value||0)*60000);clk=[lim,lim];turn=pre?pre.turn:Math.random()<.5?0:1;
+  if(pre)pre.spots.forEach(p=>spots.push({x:p.x,y:p.y,d:0}));
+  for(let t=0;spots.length<n&&t<2000;t++){
     const p={x:(Math.random()-.5)*(W-140),y:(Math.random()-.5)*(H-140),d:0};
     if(spots.every(s=>Math.hypot(s.x-p.x,s.y-p.y)>(t>1000?70:130)))spots.push(p);
   }
-  cam={x:0,y:0,z:1};info();draw();send({t:'state',s:pack(),lot:1});lottery(turn);
+  cam={x:0,y:0,z:1};info();draw();if(!pre)send({t:'state',s:pack(),lot:1});lottery(turn);
 }
 function lottery(target){
   const o=$('lot'),sp=[$('l0'),$('l1')],tk=++lt;go=false;o.hidden=false;
@@ -827,7 +212,7 @@ function lottery(target){
     if(tk!=lt)return;
     snd('tick');sp.forEach((e,i)=>e.classList.toggle('hl',i==t%2));
     if(++t<N)setTimeout(step,d*=1.12);
-    else setTimeout(()=>{if(tk!=lt)return;o.hidden=true;go=true;last=performance.now();snd('go');banner(names[turn]+' moves first',pc(turn));info();syncEloAndServer();draw()},260)
+    else setTimeout(()=>{if(tk!=lt)return;o.hidden=true;go=true;last=performance.now();snd('go');banner(names[turn]+' moves first',pc(turn));info();draw()},260)
   };
   step();
 }
@@ -840,7 +225,7 @@ function clockTick(){
 }
 function th(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('sp-theme',t)}catch(e){}$('th').textContent=t=='dark'?'☀ Light mode':'☾ Dark mode';if(spots)draw()}
 const snap=()=>JSON.stringify({spots,lines,turn});
-function undo(){if(!hist.length||tout||!go)return;({spots,lines,turn}=JSON.parse(hist.pop()));over=false;cur=null;hintPath=null;info();draw();wake()}
+function undo(){if(!hist.length||tout||!go)return;({spots,lines,turn}=JSON.parse(hist.pop()));over=false;cur=null;info();draw();wake()}
 
 function legal(a,b,s,t){
   const P=cur.path;
@@ -871,7 +256,6 @@ function extend(q){
 }
 function commit(k){
   clockTick();if(over){cur=null;return}
-  hintPath=null;
   const P=cur.path,s=cur.s,ni=spots.length,pd=spots.map(q=>q.d);hist.push(snap());
   let L=len(P)/2,i=0,m=P[P.length-1];
   for(;i<P.length-1;i++){
@@ -964,12 +348,12 @@ function info(){
   const e=$('st'),mv=lines.length/2,t=x=>document.createTextNode(x),w=over?turn^1:-1;
   [0,1].forEach(i=>{$('c'+i).classList.toggle('on',over?w==i:go&&turn==i);const tg=[seat==i?'you':'',w==i?'winner':''].filter(Boolean).join(' · '),el=$('t'+i);el.textContent=tg;el.hidden=!tg});
   const b=p=>{const x=document.createElement('b');x.style.color=pc(p);x.textContent=names[p];return x};
-  e.replaceChildren(...(over?(rz?[b(turn),t(' resigned. '),b(turn^1),t(' wins!')]:tout?[b(turn),t(' ran out of time. '),b(turn^1),t(' wins!')]:[b(turn^1),t(' wins after '+mv+' moves. '),b(turn),t(' has no move left.')])
+  e.replaceChildren(...(over?(rz?[b(turn),t(' resigned. '),b(turn^1),t(' wins!')]:fo?[b(turn),t(' left the match. '),b(turn^1),t(' wins!')]:tout?[b(turn),t(' ran out of time. '),b(turn^1),t(' wins!')]:[b(turn^1),t(' wins after '+mv+' moves. '),b(turn),t(' has no move left.')])
     :ph!='play'?[t(ph=='count'?'Match begin':rdy[0]&&rdy[1]?'Starting…':rdy[0]||rdy[1]?names[rdy[0]?0:1]+' is ready. Waiting for '+names[rdy[0]?1:0]+'.':'Choose the rules, then both players press Ready.')]:!go?[t('Choosing who moves first…')]
     :seat>=0&&turn!=seat?[t('Waiting for '),b(turn),t(' to move…')]
     :[b(turn),t((seat>=0?', your turn: ':': ')+'draw a curve between two spots, or loop one back to itself. Moves so far: '+mv+'.')]));
+  if(over&&eloMsg)e.append(t('  '+eloMsg));
   clocks();$('nw').textContent=over?'Back to lobby':rzA?'Sure? Resign':'Resign';$('nw').disabled=ph!='play'||(!over&&!go);
-  syncEloAndServer();
   if(over&&ph=='play'&&!ended){ended=true;endFx()}
 }
 function draw(){
@@ -983,7 +367,6 @@ function draw(){
   g.stroke();g.lineWidth=3.5;
   const path=p=>{g.beginPath();p.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.stroke()};
   for(const l of lines){g.strokeStyle=pc(l.c);path(l.p)}
-  if(hintPath){g.strokeStyle=css('--gold');g.setLineDash([7,7]);path(hintPath);g.setLineDash([])}
   if(cur){
     g.strokeStyle=pc(turn);path(cur.path);
     if(cur.q){g.strokeStyle=cur.bad?'#e03131':pc(turn);g.setLineDash([2,7]);path([cur.path[cur.path.length-1],cur.q]);g.setLineDash([])}
@@ -1026,59 +409,15 @@ cv.addEventListener('wheel',e=>{e.preventDefault();zoomAt(pos(e),cam.z*Math.exp(
 $('zi').onclick=()=>{zoomAt([W/2,H/2],cam.z*1.3);draw()};$('zo').onclick=()=>{zoomAt([W/2,H/2],cam.z/1.3);draw()};$('ft').onclick=fit;
 $('un').onclick=undo;
 $('nw').onclick=()=>{if(over||ph!='play'){toLobby(1);return}if(!rzA){rzA=true;setTimeout(()=>{rzA=false;info()},3000);info();return}rzA=false;const i=seat>=0?seat:turn;send({t:'resign',i});resign(i)};
-
-// Quản lý thay đổi nodes & kiểm tra hợp lệ 4, 5, 6
-$('n').onchange=$('tm').onchange=()=>{
-  let val = parseInt($('n').value, 10);
-  if (![4, 5, 6].includes(val)) { val = 5; $('n').value = '5'; }
-  const v=parseFloat($('tm').value);$('tm').value=isFinite(v)&&v>0?Math.min(999,v):0;
-  rdy=[false,false];send({t:'cfg',n:val,tm:$('tm').value});lobbyUI();info()
-};
+$('n').onchange=$('tm').onchange=()=>{const v=parseFloat($('tm').value);$('tm').value=isFinite(v)&&v>0?Math.min(999,v):0;rdy=[false,false];send({t:'cfg',n:$('n').value,tm:$('tm').value});lobbyUI();info()};
 [0,1].forEach(i=>$('r'+i).onclick=()=>{if(ph=='lobby'){send({t:'rdy',i,v:!rdy[i]});setRdy(i,!rdy[i])}});
 $('mu').onclick=()=>{setMute(!mute);snd('ready')};
 addEventListener('resize',draw);
 
-// ---- Tích hợp Đổi tên người chơi (Unique Player Name Validation) ----
-[0,1].forEach(i => {
-  $('p'+i).oninput = e => {
-    const rawName = e.target.value;
-    const validation = validateUniquePlayerName(rawName, i, names);
-    if (validation.valid) {
-      names[i] = validation.normalized;
-      if ((seat < 0 && i === 0) || seat === i) {
-        myCustomName = validation.normalized;
-        $('my-name-input').value = validation.normalized;
-      }
-      info();
-      send({t:'name', i, v: names[i]});
-      syncEloAndServer();
-      renderLeaderboard();
-    }
-  };
-  $('p'+i).onblur = e => {
-    const validation = validateUniquePlayerName(e.target.value, i, names);
-    const dupOnline = latestLeaderboard.some(p => (!socket || p.id !== socket.id) && p.name.trim().toLowerCase() === (validation.normalized || '').toLowerCase());
-    if (!validation.valid || dupOnline) {
-      e.target.value = names[i];
-      banner(dupOnline ? 'Tên này đã tồn tại trên hệ thống!' : validation.message, '#e03131', 2000);
-    } else {
-      names[i] = validation.normalized;
-      e.target.value = names[i];
-      if ((seat < 0 && i === 0) || seat === i) {
-        myCustomName = validation.normalized;
-        $('my-name-input').value = validation.normalized;
-      }
-      info();
-      send({t:'name', i, v: names[i]});
-      syncEloAndServer();
-      renderLeaderboard();
-    }
-  };
-});
+[0,1].forEach(i=>$('p'+i).oninput=e=>{names[i]=e.target.value.trim()||'Player '+(i+1);info();send({t:'name',i,v:names[i]})});
 
-// Two-device play: WebRTC data channel
-const pack=()=>JSON.stringify({spots,lines,turn,over,tout,clk,lim,n:parseInt($('n').value,10)});
-const send=o=>{if(dc&&dc.readyState=='open')dc.send(JSON.stringify(o))};
+const pack=()=>JSON.stringify({spots,lines,turn,over,tout,clk,lim,n:+$('n').value});
+const send=o=>{if(srv&&socket)socket.emit('game_action',o);else if(dc&&dc.readyState=='open')dc.send(JSON.stringify(o))};
 const ns=t=>$('ns').textContent=t;
 const lock=()=>{$('un').disabled=seat>=0;lobbyUI()};
 const ice=()=>new Promise(r=>{if(pc2.iceGatheringState=='complete')return r();pc2.onicegatheringstatechange=()=>pc2.iceGatheringState=='complete'&&r();setTimeout(r,5000)});
@@ -1088,14 +427,7 @@ const unb64u=t=>{t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='='
 const pipe=async(d,S)=>new Response(new Blob([d]).stream().pipeThrough(S)).arrayBuffer();
 const code=async()=>{const j=JSON.stringify({type:pc2.localDescription.type,sdp:pc2.localDescription.sdp,stun:stunOn?1:0});
   if(window.CompressionStream){try{return 'S1.'+b64u(await pipe(j,new CompressionStream('deflate-raw')))}catch(e){}}return btoa(j)};
-const decSafe = async c => {
-  if (c.startsWith('S1.')) {
-    try {
-      return JSON.parse(new TextDecoder().decode(await pipe(unb64u(c.slice(3)), new DecompressionStream('deflate-raw'))));
-    } catch(e) {}
-  }
-  return JSON.parse(atob(c));
-};
+const dec=async c=>c.startsWith('S1.')?JSON.parse(new TextDecoder().decode(await pipe(unb64u(c.slice(3)),new DecompressionStream('deflate-raw')))):JSON.parse(atob(c));
 const getCode=t=>{t=(t||'').trim();const m=t.match(/S1\.[\w-]+/)||t.match(/[A-Za-z0-9+\/=]{80,}/);return m?m[0]:t};
 const canLink=/^https?:$/.test(location.protocol);let shareMsg='';
 const copy=async(t,el)=>{try{await navigator.clipboard.writeText(t);return true}catch(e){try{(el||$('o')).select();return document.execCommand('copy')}catch(e2){return false}}};
@@ -1108,67 +440,21 @@ function mk(){
 }
 function wire(c){
   dc=c;
-  c.onopen=()=>{
-    closeRel();hideRoom();seat=me;
-    if(myCustomName){names[me]=myCustomName;$('p'+me).value=myCustomName;}
-    lock();ns('Connected. You are '+(me?'player 2 (blue).':'player 1 (red).'));
-    toLobby();$('net').open=false;
-    send({t:'name',i:me,v:names[me]});
-    if(me==0)send({t:'cfg',n:$('n').value,tm:$('tm').value});
-
-    // Đồng bộ bắt đầu trận ngay không cần bấm Ready nếu là ghép trận tự động / thách đấu
-    if (autoStartMatch) {
-      autoStartMatch = false;
-      if (me == 1) {
-        // Bên Join báo cho Host biết mình đã mở kênh xong để Host bắt đầu đếm ngược
-        send({ t: 'auto_ready' });
-      } else {
-        // Nếu Host mở kênh sau thì tự đếm ngược luôn
-        setTimeout(() => {
-          if (ph === 'lobby') {
-            send({ t: 'count' });
-            runCount();
-          }
-        }, 400);
-      }
-    }
-  };
+  c.onopen=()=>{cancelSearch();closeRel();hideRoom();seat=me;lock();ns('Connected. You are '+(me?'player 2 (blue).':'player 1 (red).'));toLobby();$('net').open=false;send({t:'name',i:me,v:names[me]});if(me==0)send({t:'cfg',n:$('n').value,tm:$('tm').value})};
   c.onmessage=recv;c.onclose=drop;
 }
-function drop(){if(seat<0)return;dc=null;seat=-1;rdy=[false,false];lock();ns('Disconnected. You can keep playing on this device or reconnect.');if(ph=='count')toLobby();else info()}
-function recv(e){
+function drop(){if(seat<0||srv)return;dc=null;seat=-1;rdy=[false,false];lock();ns('Disconnected. You can keep playing on this device or reconnect.');if(ph=='count')toLobby();else info()}
+function recv(e){try{handle(JSON.parse(e.data))}catch(err){}}
+function handle(m){
   try{
-    const m=JSON.parse(e.data);
-    if(m.t=='name'&&(m.i===0||m.i===1)){
-      const val = String(m.v).slice(0,20);
-      const valCheck = validateUniquePlayerName(val, m.i, names);
-      if (valCheck.valid) {
-        names[m.i] = valCheck.normalized;
-        $('p'+m.i).value = names[m.i];
-        info();
-      }
-    }
-    else if(m.t=='auto_ready'){
-      // Nhận tín hiệu từ người chơi 2 sau khi ghép trận tự động -> vào thẳng trận luôn
-      if (ph === 'lobby' && me == 0) {
-        send({ t: 'count' });
-        runCount();
-      }
-    }
+    if(m.t=='name'&&(m.i===0||m.i===1)){names[m.i]=String(m.v).slice(0,16);$('p'+m.i).value=names[m.i];info()}
     else if(m.t=='rdy'&&(m.i===0||m.i===1)&&m.i!=seat)setRdy(m.i,!!m.v);
-    else if(m.t=='cfg'){
-      let valN = parseInt(m.n, 10);
-      if([4,5,6].includes(valN)) $('n').value = valN;
-      $('tm').value=m.tm;rdy=[false,false];lobbyUI();info()
-    }
+    else if(m.t=='cfg'){$('n').value=m.n;$('tm').value=m.tm;rdy=[false,false];lobbyUI();info()}
     else if(m.t=='count'){if(ph=='lobby')runCount()}
     else if(m.t=='lobby')toLobby();
     else if(m.t=='resign'&&(m.i===0||m.i===1))resign(m.i);
     else if(m.t=='state'){
-      const o=JSON.parse(m.s),pd=spots.map(q=>q.d);({spots,lines,turn,over,tout,clk,lim}=o);
-      let valN = parseInt(o.n, 10);
-      if([4,5,6].includes(valN)) $('n').value = valN;
-      $('tm').value=lim/60000;hist=[];cur=null;last=performance.now();
+      const o=JSON.parse(m.s),pd=spots.map(q=>q.d);({spots,lines,turn,over,tout,clk,lim}=o);$('n').value=o.n;$('tm').value=lim/60000;hist=[];cur=null;last=performance.now();
       if(m.lot){clearTimeout(cdt);$('cd').hidden=true;rz=ended=warned=false;lsec=-1;cam={x:0,y:0,z:1};setPh('play');lottery(turn)}else{lt++;$('lot').hidden=true;go=true;if(spots.length>pd.length)satFx(pd,pc(turn^1))}
       info();draw();wake();
     }
@@ -1179,14 +465,14 @@ $('host').onclick=async()=>{
   await pc2.setLocalDescription(await pc2.createOffer());await ice();
   const c=await code();
   await present(canLink?location.href.split('#')[0]+'#join='+c:c,'Invite ready. Send it to your friend, then press Paste when they reply.','Join my Sprouts game:');
-  $('go').onclick=async()=>{const b=$('go');b.disabled=true;try{const o=await decSafe(getCode($('i').value));await pc2.setRemoteDescription({type:o.type,sdp:o.sdp});ns('Connecting…')}catch(err){b.disabled=false;ns('That reply did not work.')}};
+  $('go').onclick=async()=>{const b=$('go');b.disabled=true;try{const o=await dec(getCode($('i').value));await pc2.setRemoteDescription({type:o.type,sdp:o.sdp});ns('Connecting…')}catch(err){b.disabled=false;ns('That reply did not work.')}};
 };
 function setupJoin(){
   mk();me=1;pc2.ondatachannel=e=>wire(e.channel);$('go').textContent='Create reply';
   $('go').onclick=async()=>{
     const b=$('go');b.disabled=true;
     try{
-      const o=await decSafe(getCode($('i').value));
+      const o=await dec(getCode($('i').value));
       if(o.stun&&!stunOn){const v=$('i').value;$('stun').checked=true;setupJoin();$('i').value=v;b.disabled=true}
       await pc2.setRemoteDescription({type:o.type,sdp:o.sdp});
       await pc2.setLocalDescription(await pc2.createAnswer());ns('Preparing reply…');await ice();
@@ -1221,20 +507,19 @@ function relaySub(h){
   e.onerror=()=>{if(!ok&&es===e){closeRel();ns('Could not reach the relay. Check your connection, or use manual connect below.')}};
 }
 const watchConn=()=>setTimeout(()=>{if(seat<0&&ph=='lobby')ns('Still not connected. If you are on different networks, the host should tick "Different networks" and create a new room.')},20000);
-async function hostRoomWithCode(forcedCode){
-  closeRel();mk();me=0;room=forcedCode||newRoom();const p=pc2;wire(p.createDataChannel('g'));$('go').textContent='Connect';
+async function hostRoom(){
+  closeRel();mk();me=0;room=newRoom();const p=pc2;wire(p.createDataChannel('g'));$('go').textContent='Connect';
   showRoom();ns('Creating room…');
   await p.setLocalDescription(await p.createOffer());await ice();
   if(p!==pc2)return;
   const c=await code();let used=false;
   relaySub(async m=>{
     if(m.k!=='answer'||used||p!==pc2)return;used=true;
-    try{const o=await decSafe(m.c);await p.setRemoteDescription({type:o.type,sdp:o.sdp});closeRel();ns('Friend found. Connecting…');watchConn()}catch(e){used=false}
+    try{const o=await dec(m.c);await p.setRemoteDescription({type:o.type,sdp:o.sdp});closeRel();ns('Friend found. Connecting…');watchConn()}catch(e){used=false}
   });
   try{await relayPub('offer',c);ns('Room is open. Give your friend the code and wait here.')}
   catch(e){closeRel();ns('Could not reach the relay. Use manual connect below.')}
 }
-async function hostRoom(){ return hostRoomWithCode(); }
 function joinRoom(raw){
   raw=String(raw||'');const m=raw.match(/room=([A-Za-z0-9]{6})/),c=(m?m[1]:raw).toUpperCase().replace(/[^A-Z0-9]/g,'');
   if(c.length!==6){ns('Room codes have 6 characters.');return}
@@ -1251,13 +536,140 @@ const flash=async(b,t,el)=>{const o=b.textContent,ok=await copy(t,el);b.textCont
 $('rcpy').onclick=()=>flash($('rcpy'),room,$('rcode'));
 $('rlnk').onclick=()=>flash($('rlnk'),roomLink());
 $('rshr').onclick=async()=>{try{await navigator.share(canLink?{title:'Sprouts',text:'Join my Sprouts game:',url:roomLink()}:{text:'Join my Sprouts game. Room code: '+room})}catch(e){}};
+
+let searching=false,myPub='',lbData=[];
+const pid=(()=>{let v='';try{v=localStorage.getItem('sp-pid')||''}catch(e){}
+  if(!/^[A-Za-z0-9_-]{8,64}$/.test(v)){v=[...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,'0')).join('');try{localStorage.setItem('sp-pid',v)}catch(e){}}
+  return v})();
+{let n='';try{n=localStorage.getItem('sp-name')||''}catch(e){}$('pName').value=n||'Player'+(100+Math.floor(Math.random()*900))}
+const myName=()=>($('pName').value.trim()||'Player').slice(0,16);
+const qmsg=t=>{$('qm').textContent=t||''};
+function qmUI(){
+  const ok=!!socket&&socket.connected,b=$('qb');
+  b.textContent=searching?'❌ Hủy tìm trận':'⚡ Tìm trận nhanh';
+  b.classList.toggle('btn-cancel-search',searching);
+  b.disabled=!ok||(!searching&&(seat>=0||ph!='lobby'));
+  $('pName').disabled=searching;
+  ['rmk','rjn','host','join'].forEach(k=>$(k).disabled=searching);
+  $('sv').textContent=!socket?'⚪ Không có máy chủ':ok?'🟢 Đã kết nối':'🟠 Đang kết nối…';
+}
+function cancelSearch(){if(!searching)return;searching=false;if(socket)socket.emit('cancel_match');qmsg('');qmUI()}
+function leaveSrv(emit){
+  if(!srv)return;srv=false;
+  if(emit&&socket)socket.emit('leave_match');
+  seat=me=-1;names[0]='Player 1';names[1]='Player 2';$('p0').value=names[0];$('p1').value=names[1];
+  [0,1].forEach(i=>$('e'+i).hidden=true);lock();
+}
+function renderLb(){
+  const tb=$('lbBody');tb.replaceChildren();
+  if(!lbData.length){const td=tb.insertRow().insertCell();td.colSpan=4;td.textContent='Chưa có dữ liệu';return}
+  lbData.forEach((u,i)=>{const tr=tb.insertRow();if(u.pub&&u.pub===myPub)tr.className='me';
+    [i+1,(u.online?'🟢 ':'')+u.name,u.elo,u.games].forEach((v,k)=>{const td=tr.insertCell();td.textContent=v;if(k==2)td.style.fontWeight='700'})});
+}
+$('pName').onchange=()=>{
+  try{localStorage.setItem('sp-name',myName())}catch(e){}
+  if(socket&&socket.connected)socket.emit('set_name',{pid,name:myName()});
+};
+$('qb').onclick=()=>{
+  if(!socket||!socket.connected)return;
+  if(!searching){
+    $('pName').onchange();searching=true;qmsg('🔍 Đang tìm đối thủ trên máy chủ…');
+    socket.emit('find_match',{pid,name:myName(),nodes:+$('n').value});
+  }else{searching=false;socket.emit('cancel_match');qmsg('')}
+  qmUI();
+};
+let currentQuizSession=null;
+if(socket){
+  socket.on('connect',()=>{socket.emit('set_name',{pid,name:myName()});qmUI()});
+  socket.on('connect_error',qmUI);
+  socket.on('disconnect',()=>{
+    searching=false;
+    if(srv){leaveSrv(false);toLobby();qmsg('⚠️ Mất kết nối máy chủ.')}
+    qmUI();
+  });
+  socket.on('profile',p=>{myPub=p.pub;$('myElo').textContent=p.elo;renderLb()});
+  socket.on('name_result',res=>{if(!res.success)alert(res.message);});
+  socket.on('leaderboard_update',d=>{lbData=Array.isArray(d)?d:[];renderLb()});
+  socket.on('waiting_for_match',()=>qmsg('⏳ Đang chờ người chơi khác…'));
+  socket.on('match_error',m=>{searching=false;qmsg('⚠️ '+((m&&m.msg)||'Không thể tìm trận.'));qmUI()});
+  socket.on('match_start',d=>{
+    toLobby();
+    searching=false;qmsg('');
+    closeRel();hideRoom();
+    if(pc2){pc2.onconnectionstatechange=null;if(dc)dc.onclose=dc.onmessage=dc.onopen=null;try{pc2.close()}catch(e){}pc2=null;dc=null}
+    srv=true;seat=me=d.role;
+    names[0]=String(d.p1Name).slice(0,16);names[1]=String(d.p2Name).slice(0,16);
+    $('p0').value=names[0];$('p1').value=names[1];
+    $('n').value=d.spots.length;$('tm').value=d.tm;
+    [0,1].forEach(i=>{const e=$('e'+i);e.textContent='Elo '+d.elo[i];e.hidden=false});
+    rdy=[true,true];$('net').open=false;ns('');
+    lock();runCount(d);
+  });
+  socket.on('game_action',m=>{if(srv&&m&&typeof m=='object')handle(m)});
+  
+  socket.on('match_ended', d => {
+    if (!srv || ph !== 'play') return;
+    if (!over) {
+      over = true;
+      turn = d.winner ^ 1;
+      cur = null;
+      lt++;
+      $('lot').hidden = true;
+      go = true;
+      rz = d.reason === 'resign';
+      tout = d.reason === 'timeout';
+      fo = d.reason === 'forfeit';
+      info();
+      draw();
+    }
+  });
+
+  socket.on('quiz_start',d=>{
+    currentQuizSession=d;
+    $('quizModal').hidden=false;
+    $('qResultBanner').textContent = d.resultType === 'win'
+      ? '🎉 BẠN ĐÃ THẮNG! Trả lời đúng 3/3 câu để nhận thêm 150% Elo thưởng!'
+      : '😔 BẠN ĐÃ THUA! Trả lời đúng 3/3 câu để chỉ bị trừ 0.5 Elo!';
+    loadQuizQuestion(d.currentQuestion);
+  });
+  socket.on('quiz_answer_result',d=>{
+    if(d.nextQuestion)loadQuizQuestion(d.nextQuestion);
+  });
+  socket.on('quiz_completed',d=>{
+    $('quizModal').hidden=true;
+    eloMsg = `Hoàn thành thử thách (${d.correctCount}/3 đúng) • Elo mới: ${d.newElo} (${d.finalEloDelta >= 0 ? '+' : ''}${d.finalEloDelta})`;
+    if (seat >= 0) {
+      $('e' + seat).textContent = 'Elo ' + d.newElo;
+    }
+    info();
+  });
+
+  socket.on('opponent_left',()=>{
+    if(!srv)return;
+    if(ph=='play'&&!over){fo=true;over=true;turn=seat^1;tout=rz=false;cur=null;lt++;$('lot').hidden=true;go=true;info();draw()}
+    else if(ph=='count'){leaveSrv(false);toLobby();qmsg('Đối thủ đã rời.')}
+  });
+}
+
+function loadQuizQuestion(q){
+  $('qProgress').textContent=`Câu ${q.index}/3`;
+  $('qContent').textContent=q.question;
+  ['A','B','C','D'].forEach(k=>{
+    const btn=$('qOptions').querySelector(`[data-key="${k}"]`);
+    btn.disabled=false;
+    btn.textContent=`${k}. ${q.options[k]||''}`;
+    btn.onclick=()=>{
+      document.querySelectorAll('.quiz-opt-btn').forEach(b=>b.disabled=true);
+      socket.emit('submit_quiz_answer',{sessionId:currentQuizSession.sessionId,selectedAnswer:k});
+    };
+  });
+}
+
 $('th').onclick=()=>th(document.documentElement.dataset.theme=='dark'?'light':'dark');
 let t0;try{t0=localStorage.getItem('sp-theme')}catch(e){}
 th(t0||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
 setInterval(clockTick,200);
-spots=[];lines=[];hist=[];turn=0;over=false;setMute(mute);setPh('lobby');
-if(myCustomName){names[0]=myCustomName;$('p0').value=myCustomName;$('my-name-input').value=myCustomName;}
-info();draw();syncEloAndServer();renderLeaderboard();
+spots=[];lines=[];hist=[];turn=0;over=false;setMute(mute);setPh('lobby');info();draw();
 {const r=location.hash.match(/room=([A-Za-z0-9]{6})/);if(r){history.replaceState(null,'',location.href.split('#')[0]);$('net').open=true;joinRoom(r[1])}}
 {const m=location.hash.match(/join=([^&\s]+)/);if(m){history.replaceState(null,'',location.href.split('#')[0]);$('net').open=true;$('i').value=decodeURIComponent(m[1]);auto();$('net').scrollIntoView({block:'nearest'})}}
 </script></body></html>
