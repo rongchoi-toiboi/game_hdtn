@@ -8,9 +8,8 @@ const { Server } = require('socket.io');
 const PORT = process.env.PORT || 3000;
 const START_ELO = 500;
 const K_FACTOR = 32;
-const ALLOWED_NODE_COUNTS = [4, 5, 6];
+const ALLOWED_NODE_COUNTS = [2, 3, 4, 5, 6, 7, 8];
 const MATCH_MINUTES = 5;
-const REPORT_GRACE_MS = 8000;
 const PID_RE = /^[A-Za-z0-9_-]{8,64}$/;
 
 const app = express();
@@ -26,13 +25,39 @@ const io = new Server(server, {
   transports: ['websocket', 'polling']
 });
 
+// Bộ câu hỏi mặc định dự phòng nếu chưa có file questions.json
+const FALLBACK_QUESTIONS = [
+  {
+    id: 1,
+    question: "Trong trò chơi Sprouts, mỗi chấm (node) có thể nối tối đa bao nhiêu đường?",
+    options: { A: "2 đường", B: "3 đường", C: "4 đường", D: "Không giới hạn" },
+    correctAnswer: "B"
+  },
+  {
+    id: 2,
+    question: "Khi vẽ một đường nối hợp lệ trong Sprouts, điều gì xảy ra ở giữa đường vừa vẽ?",
+    options: { A: "Xóa bỏ 1 chấm cũ", B: "Thêm 1 chấm mới có bậc 2", C: "Thêm 2 chấm mới", D: "Không có gì thay đổi" },
+    correctAnswer: "B"
+  },
+  {
+    id: 3,
+    question: "Nếu trò chơi Sprouts bắt đầu với n chấm ban đầu, số nước đi tối đa có thể thực hiện là bao nhiêu?",
+    options: { A: "2n - 1", B: "3n - 1", C: "3n", D: "4n - 2" },
+    correctAnswer: "B"
+  }
+];
+
 let questionsBank = [];
 try {
   const qPath = path.join(__dirname, 'questions.json');
-  if (fs.existsSync(qPath)) questionsBank = JSON.parse(fs.readFileSync(qPath, 'utf-8'));
+  if (fs.existsSync(qPath)) {
+    const parsed = JSON.parse(fs.readFileSync(qPath, 'utf-8'));
+    if (Array.isArray(parsed) && parsed.length >= 3) questionsBank = parsed;
+  }
 } catch (e) {
-  console.error('Không thể đọc questions.json:', e);
+  console.error('Lỗi đọc questions.json, dùng bộ câu hỏi mặc định:', e);
 }
+if (questionsBank.length < 3) questionsBank = FALLBACK_QUESTIONS;
 
 const ratings = new Map();
 const usernames = new Map();
@@ -71,7 +96,8 @@ function identify(socket, data) {
         usernames.set(requestedName.toLowerCase(), u.pid);
         socket.emit('name_result', { success: true, name: requestedName });
       } else {
-        socket.emit('name_result', { success: false, message: 'Tên này đã được sử dụng!' });
+        socket.emit('name_result', { success: false, message: 'Tên này đã có người sử dụng!' });
+        socket.emit('profile', profileOf(rec));
       }
     }
   }
@@ -91,38 +117,54 @@ function getLeaderboard() {
 }
 const broadcastLeaderboard = () => io.emit('leaderboard_update', getLeaderboard());
 
-function generateSpots(n = 4) {
+function generateSpots(n = 3) {
   const spots = [];
   const W = 900, H = 600;
   for (let t = 0; spots.length < n && t < 2000; t++) {
     const p = { x: (Math.random() - 0.5) * (W - 140), y: (Math.random() - 0.5) * (H - 140), d: 0 };
-    if (spots.every((s) => Math.hypot(s.x - p.x, s.y - p.y) > 130)) spots.push(p);
+    if (spots.every((s) => Math.hypot(s.x - p.x, s.y - p.y) > (t > 1000 ? 70 : 130))) spots.push(p);
   }
   return spots;
 }
 
-function startQuizSession(socketId, matchId, resultType, baseGain, baseLoss) {
-  if (questionsBank.length === 0) return;
+function startQuizSession(socketId, resultType, baseGain, baseLoss) {
   const shuffled = [...questionsBank].sort(() => 0.5 - Math.random());
   const selected = shuffled.slice(0, 3).map(q => ({ id: q.id, question: q.question, options: q.options }));
   const sessionId = crypto.randomBytes(16).toString('hex');
-  
-  quizSessions[sessionId] = { socketId, questions: selected, currentIndex: 0, correctCount: 0, resultType, baseGain, baseLoss, completed: false };
+
+  quizSessions[sessionId] = {
+    socketId,
+    questions: selected,
+    currentIndex: 0,
+    correctCount: 0,
+    resultType,
+    baseGain,
+    baseLoss,
+    completed: false
+  };
 
   const socket = io.sockets.sockets.get(socketId);
   if (socket) {
-    socket.emit('quiz_start', { sessionId, resultType, total: 3, currentQuestion: { index: 1, ...selected[0] } });
+    socket.emit('quiz_start', {
+      sessionId,
+      resultType,
+      total: 3,
+      currentQuestion: { index: 1, ...selected[0] }
+    });
   }
 }
 
-function finishRoom(room, winnerRole) {
-  if (room.finished) return;
+function finishRoom(room, winnerRole, reason = 'nomoves') {
+  if (!room || room.finished) return;
   room.finished = true;
-  clearTimeout(room.timer);
 
   const W_sock = winnerRole === 0 ? room.p1 : room.p2;
   const L_sock = winnerRole === 0 ? room.p2 : room.p1;
   const W = recOf(W_sock), L = recOf(L_sock);
+
+  // Báo cho cả 2 client biết ván đấu đã kết thúc và ai thắng
+  io.to(room.id).emit('match_ended', { winner: winnerRole, reason });
+
   if (!W || !L) return;
 
   const expected = 1 / (1 + Math.pow(10, (L.elo - W.elo) / 400));
@@ -130,16 +172,21 @@ function finishRoom(room, winnerRole) {
   const newL = Math.max(0, L.elo - baseGain);
   const baseLoss = L.elo - newL;
 
-  startQuizSession(W_sock, room.id, 'win', baseGain, baseLoss);
-  startQuizSession(L_sock, room.id, 'loss', baseGain, baseLoss);
+  // Bắt đầu thử thách 3 câu hỏi cho cả 2 người chơi
+  startQuizSession(W_sock, 'win', baseGain, baseLoss);
+  startQuizSession(L_sock, 'loss', baseGain, baseLoss);
 }
 
 function leaveRoom(socket) {
   const room = rooms[socket.id];
   if (!room) return;
   const role = room.p1 === socket.id ? 0 : 1;
-  if (!room.finished) finishRoom(room, role ^ 1);
-  delete rooms[room.p1]; delete rooms[room.p2];
+  if (!room.finished) {
+    socket.to(room.id).emit('opponent_left');
+    finishRoom(room, role ^ 1, 'forfeit');
+  }
+  delete rooms[room.p1];
+  delete rooms[room.p2];
   socket.leave(room.id);
 }
 
@@ -156,11 +203,9 @@ io.on('connection', (socket) => {
     const rec = identify(socket, data);
     socket.emit('profile', profileOf(rec));
 
-    let nodeCount = 4;
+    let nodeCount = 3;
     if (data && ALLOWED_NODE_COUNTS.includes(Number(data.nodes))) {
       nodeCount = Number(data.nodes);
-    } else {
-      return socket.emit('match_error', { msg: 'Số lượng Node không hợp lệ!' });
     }
 
     if (waitingPlayer && waitingPlayer.id === socket.id) return;
@@ -171,20 +216,56 @@ io.on('connection', (socket) => {
       waitingPlayer = null;
       const roomId = 'room_' + p1.id + '_' + p2.id;
       p1.join(roomId); p2.join(roomId);
-      const room = { id: roomId, p1: p1.id, p2: p2.id, finished: false, timer: null };
+      const room = { id: roomId, p1: p1.id, p2: p2.id, finished: false };
       rooms[p1.id] = room; rooms[p2.id] = room;
 
       const r1 = recOf(p1.id), r2 = recOf(p2.id);
-      const matchData = { roomId, spots: generateSpots(nodeCount), turn: Math.random() < 0.5 ? 0 : 1, tm: MATCH_MINUTES, p1Name: r1.name, p2Name: r2.name, elo: [r1.elo, r2.elo] };
+      const matchData = {
+        roomId,
+        spots: generateSpots(nodeCount),
+        turn: Math.random() < 0.5 ? 0 : 1,
+        tm: MATCH_MINUTES,
+        p1Name: r1.name,
+        p2Name: r2.name,
+        elo: [r1.elo, r2.elo]
+      };
       p1.emit('match_start', { ...matchData, role: 0 });
       p2.emit('match_start', { ...matchData, role: 1 });
     } else {
       waitingPlayer = socket;
+      socket.emit('waiting_for_match');
     }
   });
 
-  socket.on('cancel_match', () => { if (waitingPlayer && waitingPlayer.id === socket.id) waitingPlayer = null; });
+  socket.on('cancel_match', () => {
+    if (waitingPlayer && waitingPlayer.id === socket.id) waitingPlayer = null;
+  });
 
+  socket.on('leave_match', () => leaveRoom(socket));
+
+  // Chuyển tiếp hành động trong ván đấu và bắt sự kiện resign
+  socket.on('game_action', (msg) => {
+    const room = rooms[socket.id];
+    if (!room || !msg || typeof msg !== 'object') return;
+    socket.to(room.id).emit('game_action', msg);
+
+    if (msg.t === 'resign' && !room.finished) {
+      const senderRole = room.p1 === socket.id ? 0 : 1;
+      finishRoom(room, senderRole ^ 1, 'resign');
+    }
+  });
+
+  // Nhận báo cáo hết ván từ client (hết nước đi / hết giờ / đầu hàng)
+  socket.on('game_over', (data) => {
+    const room = rooms[socket.id];
+    if (!room || room.finished || !data) return;
+    const winner = data.winner === 0 || data.winner === 1 ? data.winner : null;
+    if (winner !== null) {
+      finishRoom(room, winner, data.reason || 'nomoves');
+    }
+  });
+
+  // Xử lý trả lời từng câu hỏi trắc nghiệm
   socket.on('submit_quiz_answer', (data) => {
     if (!data || !data.sessionId || !data.selectedAnswer) return;
     const session = quizSessions[data.sessionId];
@@ -199,23 +280,35 @@ io.on('connection', (socket) => {
 
     if (session.currentIndex < 3) {
       const nextQ = session.questions[session.currentIndex];
-      socket.emit('quiz_answer_result', { correct: isCorrect, nextQuestion: { index: session.currentIndex + 1, ...nextQ } });
+      socket.emit('quiz_answer_result', {
+        correct: isCorrect,
+        nextQuestion: { index: session.currentIndex + 1, ...nextQ }
+      });
     } else {
       session.completed = true;
       let finalEloDelta = 0;
-      const W = recOf(session.socketId);
-      if (!W) return;
+      const playerRec = recOf(session.socketId);
+      if (!playerRec) return;
 
       if (session.resultType === 'win') {
-        finalEloDelta = session.correctCount === 3 ? session.baseGain + Math.round(session.baseGain * 1.5) : session.baseGain;
-        W.elo += finalEloDelta; W.wins++; W.games++;
+        finalEloDelta = session.correctCount === 3
+          ? session.baseGain + Math.round(session.baseGain * 1.5)
+          : session.baseGain;
+        playerRec.elo += finalEloDelta;
+        playerRec.wins++;
+        playerRec.games++;
       } else {
         finalEloDelta = session.correctCount === 3 ? -0.5 : -session.baseLoss;
-        W.elo = Math.max(0, W.elo + finalEloDelta); W.games++;
+        playerRec.elo = Math.max(0, Number((playerRec.elo + finalEloDelta).toFixed(1)));
+        playerRec.games++;
       }
 
-      socket.emit('quiz_completed', { correctCount: session.correctCount, finalEloDelta, newElo: W.elo });
-      socket.emit('profile', profileOf(W));
+      socket.emit('quiz_completed', {
+        correctCount: session.correctCount,
+        finalEloDelta,
+        newElo: playerRec.elo
+      });
+      socket.emit('profile', profileOf(playerRec));
       broadcastLeaderboard();
       delete quizSessions[data.sessionId];
     }
