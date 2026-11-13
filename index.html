@@ -303,7 +303,7 @@ let shieldActive = false;     // Khiên bảo hộ (30 ELO -> miễn trừ ELO k
 let hintPath = null;          // Thấu thị (25 ELO -> gợi ý 1 nước đi hợp lệ)
 let latestLeaderboard = [];
 let isSearchingMatch = false;
-let autoStartMatch = false;
+let autoStartMatch = false;   // Bỏ qua bước bấm Ready khi ghép trận tự động
 
 function applyMyNameLocally(validName) {
   myCustomName = validName;
@@ -568,6 +568,7 @@ function validateUniquePlayerName(name, playerId, currentNames) {
   const norm = normalizePlayerName(name);
   if (!norm || norm.length < 2 || norm.length > 20) return { valid: false, message: 'Tên phải từ 2 đến 20 ký tự và không được để trống.' };
   
+  // Kiểm tra trùng với người chơi còn lại
   for (let i = 0; i < currentNames.length; i++) {
     if (i !== playerId && normalizePlayerName(currentNames[i]).toLowerCase() === norm.toLowerCase()) {
       return { valid: false, message: 'Tên này đã được người chơi khác sử dụng.' };
@@ -594,12 +595,10 @@ async function loadQuizData() {
       const list = Array.isArray(data) ? data : (data && Array.isArray(data.questions) ? data.questions : []);
       if (list.length > 0) {
         quizBank = list;
-        console.log(`Đã tải thành công ${quizBank.length} câu hỏi từ ${file}`);
+        console.log(`Đã tải ${quizBank.length} câu hỏi từ ${file}`);
         return true;
       }
-    } catch(e) {
-      console.warn('Lỗi đọc file ' + file, e);
-    }
+    } catch(e) {}
   }
   return false;
 }
@@ -610,7 +609,6 @@ async function startQuizSession(isWinner) {
     await loadQuizData();
   }
   if (quizBank.length === 0) {
-    banner('⚠️ Không tìm thấy dữ liệu trong questions.json!', '#e03131', 3000);
     finalizeMatchScore(isWinner, false);
     return;
   }
@@ -627,6 +625,7 @@ async function startQuizSession(isWinner) {
 function showNextQuizQuestion() {
   if (consecutiveCorrect >= 3 || quizCompleted) return;
 
+  // Lọc câu hỏi chưa dùng
   const available = quizBank.filter(q => !usedQuestionIds.has(q.id));
   if (available.length === 0) {
     usedQuestionIds.clear();
@@ -636,7 +635,9 @@ function showNextQuizQuestion() {
   const q = available[Math.floor(Math.random() * available.length)];
   usedQuestionIds.add(q.id);
 
+  // Xáo trộn đáp án mà vẫn giữ đúng đáp án chính xác
   const originalOptions = q.options.map((opt, idx) => ({ text: opt, isCorrect: idx === q.answer }));
+  // Shuffle options
   for (let i = originalOptions.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [originalOptions[i], originalOptions[j]] = [originalOptions[j], originalOptions[i]];
@@ -696,8 +697,10 @@ function handleQuizAnswer(selectedIndex, btnElement) {
         finalizeMatchScore((turn ^ 1) === (seat >= 0 ? seat : (turn ^ 1)), true);
       }, 1200);
     } else {
+      // Chờ 1.2s rồi qua câu tiếp theo hoặc kết thúc nếu sai
       setTimeout(() => {
         if (!isCorrect) {
+          // Sai chuỗi -> kết thúc quiz session với kết quả không đạt chuỗi
           quizCompleted = true;
           $('quiz-modal').hidden = true;
           finalizeMatchScore((turn ^ 1) === (seat >= 0 ? seat : (turn ^ 1)), false);
@@ -719,7 +722,7 @@ function finalizeMatchScore(isWinner, streakAchieved) {
 
   if (isWinner) {
     if (streakAchieved) {
-      finalScore = baseGameScore * 1.5;
+      finalScore = baseGameScore * 1.5; // Thêm 50%
       reportText = `🎉 CHIẾN THẮNG & ĐẠT CHUỖI QUIZ! Điểm gốc: ${baseGameScore} → Tổng điểm (x1.5): ${finalScore}`;
     } else {
       finalScore = baseGameScore;
@@ -738,11 +741,11 @@ function finalizeMatchScore(isWinner, streakAchieved) {
       shieldActive = false;
       reportText = `🛡️ KHIÊN BẢO HỘ KÍCH HOẠT! Bạn không bị trừ ELO.`;
     } else if (streakAchieved) {
-      finalScore = Math.max(0, baseGameScore - 0.5);
+      finalScore = Math.max(0, baseGameScore - 0.5); // Giảm phạt còn 0.5đ
       userElo = Math.max(0, userElo - 0.5);
-      reportText = `🛡️ THUA NHƯNG CỨU TRỢ THÀNH CÔNG! Phạt cố định chỉ còn: 0.5đ (Điểm cuối: ${finalScore})`;
+      reportText = `🛡️ THUT NHƯNG CỨU TRỢ THÀNH CÔNG! Phạt cố định chỉ còn: 0.5đ (Điểm cuối: ${finalScore})`;
     } else {
-      finalScore = baseGameScore - 2;
+      finalScore = baseGameScore - 2; // Phạt chuẩn thông thường
       userElo = Math.max(0, userElo - 2);
       reportText = `💔 THẤT BẠI. Áp dụng mức phạt chuẩn. Điểm cuối: ${finalScore}`;
     }
@@ -777,6 +780,7 @@ function endFx(){
   banner((rz?'Resigned! ':tout?'Time is up! ':'')+names[w]+' wins!',col,3200);
   for(let k=0;k<6;k++)setTimeout(()=>{const q=wld([Math.random()*W,Math.random()*H]);burst(q[0],q[1],col,18,3,1000)},k*180);
   
+  // Kích hoạt Quiz sau trận đấu (Winner/Loser)
   setTimeout(() => {
     scoreFinalized = false;
     const isWinner = (seat >= 0 ? seat === w : true);
@@ -812,6 +816,7 @@ function fit(){const[x0,y0,x1,y1]=bbox();cam={x:(x0+x1)/2,y:(y0+y1)/2,z:Math.max
 
 function newGame(){
   const n=parseInt($('n').value, 10);
+  // Cố định node chỉ nhận 4, 5, 6
   const validSpots = [4, 5, 6].includes(n) ? n : 5;
   spots=[];lines=[];hist=[];over=tout=false;cur=null;rz=ended=warned=false;lsec=-1;fx.length=0;hintPath=null;setPh('play');
   lim=Math.round(Math.max(0,+$('tm').value||0)*60000);clk=[lim,lim];turn=Math.random()<.5?0:1;
@@ -1029,6 +1034,7 @@ $('zi').onclick=()=>{zoomAt([W/2,H/2],cam.z*1.3);draw()};$('zo').onclick=()=>{zo
 $('un').onclick=undo;
 $('nw').onclick=()=>{if(over||ph!='play'){toLobby(1);return}if(!rzA){rzA=true;setTimeout(()=>{rzA=false;info()},3000);info();return}rzA=false;const i=seat>=0?seat:turn;send({t:'resign',i});resign(i)};
 
+// Quản lý thay đổi nodes & kiểm tra hợp lệ 4, 5, 6
 $('n').onchange=$('tm').onchange=()=>{
   let val = parseInt($('n').value, 10);
   if (![4, 5, 6].includes(val)) { val = 5; $('n').value = '5'; }
@@ -1046,7 +1052,7 @@ addEventListener('resize',draw);
     const validation = validateUniquePlayerName(rawName, i, names);
     if (validation.valid) {
       names[i] = validation.normalized;
-      if (seat < 0 && i === 0 || seat === i) {
+      if ((seat < 0 && i === 0) || seat === i) {
         myCustomName = validation.normalized;
         $('my-name-input').value = validation.normalized;
       }
@@ -1065,7 +1071,7 @@ addEventListener('resize',draw);
     } else {
       names[i] = validation.normalized;
       e.target.value = names[i];
-      if (seat < 0 && i === 0 || seat === i) {
+      if ((seat < 0 && i === 0) || seat === i) {
         myCustomName = validation.normalized;
         $('my-name-input').value = validation.normalized;
       }
@@ -1117,7 +1123,7 @@ function wire(c){
     send({t:'name',i:me,v:names[me]});
     if(me==0)send({t:'cfg',n:$('n').value,tm:$('tm').value});
 
-    // Nếu ghép trận tự động / thách đấu -> Bỏ qua Ready, tự động vào trận luôn
+    // Ghép trận tự động / thách đấu -> Bỏ qua bước Ready, tự động đếm ngược vào ván luôn
     if (autoStartMatch) {
       autoStartMatch = false;
       rdy = [true, true];
