@@ -9,11 +9,35 @@
 *{box-sizing:border-box}
 body{margin:0;padding:clamp(12px,3vw,32px);background:var(--desk);color:var(--ink);font:15px/1.5 var(--f);-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
 main{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
-header{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:var(--sh)}
+header{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:var(--sh)}
 h1{font:700 1.75rem/1 var(--f);margin:0;letter-spacing:-.03em;background:linear-gradient(135deg,var(--p1),var(--p2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-header p{margin:0;color:var(--mut);font-size:.9rem}
-.elo-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;background:color-mix(in srgb,var(--gold) 15%,var(--paper));border:1px solid color-mix(in srgb,var(--gold) 50%,var(--line));font-weight:700;font-size:.88rem;color:var(--ink)}
+header p{margin:0;color:var(--mut);font-size:.88rem}
+.elo-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:99px;background:color-mix(in srgb,var(--gold) 15%,var(--paper));border:1px solid color-mix(in srgb,var(--gold) 50%,var(--line));font-weight:700;font-size:.88rem;color:var(--ink)}
 .elo-pill b{color:var(--gold);font-variant-numeric:tabular-nums}
+
+/* Thanh Đổi Tên Duy Nhất & Nút Tìm Trận Lớn */
+.hero-bar{display:grid;grid-template-columns:1fr 1.2fr;gap:12px}
+@media(max-width:680px){.hero-bar{grid-template-columns:1fr}}
+.name-box{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:var(--sh);display:flex;flex-direction:column;justify-content:center;gap:6px}
+.name-box label{font-size:.8rem;font-weight:700;color:var(--mut);display:flex;justify-content:space-between;align-items:center}
+.name-row{display:flex;gap:8px;align-items:center}
+.name-row input{flex:1;min-width:0;padding:8px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-weight:700;outline:none;transition:border-color .2s}
+.name-row input:focus{border-color:var(--p2)}
+.name-err{font-size:.76rem;color:#e03131;font-weight:600;min-height:1.1em}
+
+.match-box{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:var(--sh);display:flex;flex-direction:column;justify-content:center;gap:8px}
+#btn-find-match{
+  width:100%;padding:14px 20px;border-radius:12px;border:0;
+  background:linear-gradient(135deg,var(--p1),var(--p2));
+  color:#fff;font-size:1.08rem;font-weight:800;letter-spacing:.01em;
+  box-shadow:0 6px 20px color-mix(in srgb,var(--p1) 30%,transparent);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:transform .15s,box-shadow .15s,filter .15s;
+}
+#btn-find-match:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.06);box-shadow:0 8px 24px color-mix(in srgb,var(--p2) 38%,transparent)}
+#btn-find-match.searching{background:linear-gradient(135deg,#f59f00,#e8590c);animation:pulseMatch 1.4s infinite}
+@keyframes pulseMatch{0%,100%{box-shadow:0 0 0 0 rgba(245,159,0,.5)}50%{box-shadow:0 0 0 8px rgba(245,159,0,0)}}
+.match-sub{font-size:.8rem;color:var(--mut);text-align:center}
 
 /* ELO Power-ups Panel */
 .elo-shop{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:10px}
@@ -78,7 +102,7 @@ textarea{display:block;width:100%;height:4.5em;margin:4px 0 10px;padding:6px 8px
 .pl.on .clk{color:var(--ink)}.clk.low{color:#e03131!important;animation:bl 1s infinite}
 @keyframes bl{50%{opacity:.4}}
 @media(prefers-reduced-motion:reduce){.clk.low{animation:none}.lr span{transition:none}}
-body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,body[data-ph=count] .bar,body[data-ph=play] #lobby,body[data-ph=play] #net,body[data-ph=play] #leaderboard-sec{display:none}
+body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,body[data-ph=count] .bar,body[data-ph=play] #lobby,body[data-ph=play] #net,body[data-ph=play] #leaderboard-sec,body[data-ph=play] .hero-bar{display:none}
 .lob{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:16px 20px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
 .lob h2{font:600 1.1rem/1 var(--f);margin:0}.lob p{margin:0;color:var(--mut);max-width:70ch;font-size:.9rem}.lob small{color:var(--mut);font-size:.8rem}
 .lrow{display:flex;flex-wrap:wrap;gap:18px}.lrow label{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:.9rem}
@@ -135,6 +159,26 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
   <button id="th"></button>
 </header>
 
+<!-- Thanh Đổi Tên Duy Nhất & Nút Tìm Trận Ngẫu Nhiên Lớn -->
+<section class="hero-bar">
+  <div class="name-box">
+    <label for="my-name-input">
+      <span>✏️ Tên hiển thị của bạn (Duy nhất)</span>
+      <span style="font-weight:500">2–20 ký tự</span>
+    </label>
+    <div class="name-row">
+      <input id="my-name-input" maxlength="20" placeholder="Nhập tên của bạn..." autocomplete="off">
+      <button id="btn-save-name" class="pri">Lưu tên</button>
+    </div>
+    <div class="name-err" id="name-err"></div>
+  </div>
+
+  <div class="match-box">
+    <button id="btn-find-match">⚔️ TÌM TRẬN NGẪU NHIÊN</button>
+    <div class="match-sub" id="match-sub">Tự động ghép cặp với người chơi đang tìm trận</div>
+  </div>
+</section>
+
 <!-- ELO Power-ups (Xài lúc nào cũng được nếu có đủ điểm ELO) -->
 <section class="elo-shop">
   <div class="elo-shop-head">
@@ -172,11 +216,11 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=count] .sheet,b
 <div id="st" role="status"></div>
 <section class="lob" id="lobby"><h2>Lobby</h2><p id="lm"></p><div class="lrow"><label>Spots <select id="n"><option value="4">4 Nodes</option><option value="5" selected>5 Nodes</option><option value="6">6 Nodes</option></select></label><label>Minutes per player <input id="tm" type="number" min="0" max="999" step="any" value="5" inputmode="decimal" aria-label="Minutes per player, 0 for no limit"></label><small>0 = no time limit</small></div><p>Rules lock once the match starts.</p><div id="cd" hidden></div></section>
 
-<!-- Bảng Xếp Hạng ELO (Leaderboard) & Nút Tìm Trận Ngẫu Nhiên -->
+<!-- Bảng Xếp Hạng ELO (Leaderboard) -->
 <section class="lb-card" id="leaderboard-sec">
   <div class="lb-head">
     <span>📊 Bảng Xếp Hạng ELO (Leaderboard)</span>
-    <button id="btn-find-match" class="pri">⚔️ Tìm trận ngẫu nhiên</button>
+    <span style="font-size:.82rem;color:var(--mut);font-weight:500">Cập nhật trực tiếp</span>
   </div>
   <table class="lb-table">
     <thead>
@@ -242,12 +286,15 @@ const names=['Player 1','Player 2'],ptr=new Map();
 let ph='lobby',rdy=[false,false],cdt=0,rz=false,rzA=false,ended=false,warned=false,lsec=-1,bt=0,fxr=false,mute=false,ac;const fx=[];
 try{mute=localStorage.getItem('sp-mute')=='1'}catch(e){}
 
-// ---- HỆ THỐNG ELO, LEADERBOARD & ĐẶC QUYỀN ----
+// ---- HỆ THỐNG ELO, LEADERBOARD, ĐỔI TÊN DUY NHẤT & TÌM TRẬN ----
 const socket = typeof io !== 'undefined' ? io() : null;
 let userElo = 100;
+let myCustomName = '';
 try {
   const s = localStorage.getItem('sp-elo');
   if (s !== null && !isNaN(Number(s))) userElo = Math.max(0, Number(s));
+  const savedName = localStorage.getItem('sp-myname');
+  if (savedName) myCustomName = savedName;
 } catch(e) {}
 
 let hopeStarActive = false;   // Ngôi sao hi vọng (20 ELO -> x2 ELO khi thắng)
@@ -255,6 +302,44 @@ let bayChoUntil = 0;          // Bảy chọ (25 ELO -> chặn thách đấu 3 p
 let shieldActive = false;     // Khiên bảo hộ (30 ELO -> miễn trừ ELO khi thua)
 let hintPath = null;          // Thấu thị (25 ELO -> gợi ý 1 nước đi hợp lệ)
 let latestLeaderboard = [];
+let isSearchingMatch = false;
+
+function applyMyNameLocally(validName) {
+  myCustomName = validName;
+  try { localStorage.setItem('sp-myname', validName); } catch(e) {}
+  $('my-name-input').value = validName;
+  const myIdx = seat >= 0 ? seat : 0;
+  names[myIdx] = validName;
+  $('p' + myIdx).value = validName;
+  info();
+  send({ t: 'name', i: myIdx, v: validName });
+}
+
+function submitNewName(raw) {
+  const myIdx = seat >= 0 ? seat : 0;
+  const check = validateUniquePlayerName(raw, myIdx, names);
+  if (!check.valid) {
+    $('name-err').textContent = check.message;
+    snd('bad');
+    return;
+  }
+  // Kiểm tra trùng trên toàn bảng xếp hạng online
+  const dupOnline = latestLeaderboard.some(p => (!socket || p.id !== socket.id) && p.name.trim().toLowerCase() === check.normalized.toLowerCase());
+  if (dupOnline) {
+    $('name-err').textContent = `Tên "${check.normalized}" đã tồn tại trên hệ thống!`;
+    snd('bad');
+    return;
+  }
+  $('name-err').textContent = '';
+  applyMyNameLocally(check.normalized);
+  if (socket) {
+    socket.emit('sync_player', { name: check.normalized, elo: userElo, blockedUntil: bayChoUntil });
+  }
+  snd('ready');
+}
+
+$('btn-save-name').onclick = () => submitNewName($('my-name-input').value);
+$('my-name-input').onkeydown = e => { if (e.key === 'Enter') submitNewName($('my-name-input').value); };
 
 function syncEloAndServer() {
   try { localStorage.setItem('sp-elo', String(userElo)); } catch(e) {}
@@ -281,7 +366,7 @@ function syncEloAndServer() {
 
   if (socket) {
     const myIdx = seat >= 0 ? seat : 0;
-    socket.emit('sync_player', { name: names[myIdx], elo: userElo, blockedUntil: bayChoUntil });
+    socket.emit('sync_player', { name: myCustomName || names[myIdx], elo: userElo, blockedUntil: bayChoUntil });
   }
 }
 
@@ -293,7 +378,7 @@ function renderLeaderboard(list) {
     const bcLeft = Math.max(0, Math.ceil((bayChoUntil - Date.now()) / 1000));
     tbody.innerHTML = `<tr>
       <td class="lb-rank lb-rank-1">#1</td>
-      <td><b>${names[myIdx]}</b> <small style="color:var(--p2)">(Bạn)</small></td>
+      <td><b>${myCustomName || names[myIdx]}</b> <small style="color:var(--p2)">(Bạn)</small></td>
       <td class="lb-elo">${userElo} ELO</td>
       <td>${bcLeft > 0 ? `<span style="color:var(--purp);font-weight:600">🚫 Bảy chọ (${bcLeft}s)</span>` : '<span style="color:var(--teal)">● Sẵn sàng</span>'}</td>
       <td>—</td>
@@ -392,29 +477,70 @@ $('btn-shield').onclick = () => {
   syncEloAndServer();
 };
 
-// Nút bấm tìm trận ngẫu nhiên trên Leaderboard
+// Nút Tìm Trận Ngẫu Nhiên (Tự động ghép cặp & kết nối 2 máy)
+function setSearchingUI(searching) {
+  isSearchingMatch = searching;
+  const btn = $('btn-find-match');
+  btn.classList.toggle('searching', searching);
+  btn.innerHTML = searching ? '⏳ ĐANG TÌM ĐỐI THỦ... (Bấm để hủy)' : '⚔️ TÌM TRẬN NGẪU NHIÊN';
+  $('match-sub').textContent = searching ? 'Đang quét người chơi trực tuyến...' : 'Tự động ghép cặp với người chơi đang tìm trận';
+}
+
 $('btn-find-match').onclick = () => {
-  if (!socket) {
-    ns('Cần chạy qua server (node server.js) để tìm trận online.');
+  if (!socket || !socket.connected) {
+    $('match-sub').textContent = '⚠️ Chưa kết nối được máy chủ! Hãy chạy server (node server.js).';
+    snd('bad');
     return;
   }
-  $('btn-find-match').disabled = true;
-  $('btn-find-match').textContent = '⏳ Đang tìm đối thủ...';
+  if (isSearchingMatch) {
+    socket.emit('find_match', { cancel: true });
+    setSearchingUI(false);
+    return;
+  }
+  setSearchingUI(true);
+  snd('ready');
   socket.emit('find_match', { nodes: parseInt($('n').value, 10) });
 };
 
 if (socket) {
+  socket.on('init_profile', d => {
+    if (myCustomName) {
+      socket.emit('sync_player', { name: myCustomName, elo: userElo, blockedUntil: bayChoUntil });
+    } else if (d && d.name) {
+      applyMyNameLocally(d.name);
+    }
+  });
+  socket.on('name_accepted', d => {
+    $('name-err').textContent = '';
+    applyMyNameLocally(d.name);
+  });
+  socket.on('name_rejected', d => {
+    $('name-err').textContent = d.message;
+    snd('bad');
+    if (d.fallback) applyMyNameLocally(d.fallback);
+  });
   socket.on('leaderboard_update', renderLeaderboard);
-  socket.on('waiting', d => ns(d.message));
-  socket.on('match_found', d => {
-    $('btn-find-match').disabled = false;
-    $('btn-find-match').textContent = '⚔️ Tìm trận ngẫu nhiên';
-    ns(`Tìm thấy trận: ${d.roomId}`);
+  socket.on('waiting', d => {
+    $('match-sub').textContent = d.message;
+  });
+  socket.on('search_cancelled', () => {
+    setSearchingUI(false);
+  });
+  socket.on('match_found', async d => {
+    setSearchingUI(false);
+    snd('chime');
+    $('net').open = true;
+    $('match-sub').textContent = `🎉 Đã tìm thấy đối thủ! Đang vào phòng ${d.roomCode}...`;
+    // Tự động ghép 2 thiết bị vào chung phòng WebRTC
+    if (d.role === 'host') {
+      await hostRoomWithCode(d.roomCode);
+    } else {
+      setTimeout(() => joinRoom(d.roomCode), 500);
+    }
   });
   socket.on('error_message', d => {
-    $('btn-find-match').disabled = false;
-    $('btn-find-match').textContent = '⚔️ Tìm trận ngẫu nhiên';
-    ns(d.message);
+    setSearchingUI(false);
+    $('match-sub').textContent = d.message;
   });
   socket.on('challenge_blocked', d => { snd('bad'); banner(d.message, css('--purp'), 2500); });
   socket.on('incoming_challenge', d => {
@@ -913,6 +1039,10 @@ addEventListener('resize',draw);
     const validation = validateUniquePlayerName(rawName, i, names);
     if (validation.valid) {
       names[i] = validation.normalized;
+      if (seat < 0 && i === 0 || seat === i) {
+        myCustomName = validation.normalized;
+        $('my-name-input').value = validation.normalized;
+      }
       info();
       send({t:'name', i, v: names[i]});
       syncEloAndServer();
@@ -921,12 +1051,17 @@ addEventListener('resize',draw);
   };
   $('p'+i).onblur = e => {
     const validation = validateUniquePlayerName(e.target.value, i, names);
-    if (!validation.valid) {
+    const dupOnline = latestLeaderboard.some(p => (!socket || p.id !== socket.id) && p.name.trim().toLowerCase() === (validation.normalized || '').toLowerCase());
+    if (!validation.valid || dupOnline) {
       e.target.value = names[i];
-      banner(validation.message, '#e03131', 2000);
+      banner(dupOnline ? 'Tên này đã tồn tại trên hệ thống!' : validation.message, '#e03131', 2000);
     } else {
       names[i] = validation.normalized;
       e.target.value = names[i];
+      if (seat < 0 && i === 0 || seat === i) {
+        myCustomName = validation.normalized;
+        $('my-name-input').value = validation.normalized;
+      }
       info();
       send({t:'name', i, v: names[i]});
       syncEloAndServer();
@@ -967,7 +1102,7 @@ function mk(){
 }
 function wire(c){
   dc=c;
-  c.onopen=()=>{closeRel();hideRoom();seat=me;lock();ns('Connected. You are '+(me?'player 2 (blue).':'player 1 (red).'));toLobby();$('net').open=false;send({t:'name',i:me,v:names[me]});if(me==0)send({t:'cfg',n:$('n').value,tm:$('tm').value})};
+  c.onopen=()=>{closeRel();hideRoom();seat=me;if(myCustomName){names[me]=myCustomName;$('p'+me).value=myCustomName;}lock();ns('Connected. You are '+(me?'player 2 (blue).':'player 1 (red).'));toLobby();$('net').open=false;send({t:'name',i:me,v:names[me]});if(me==0)send({t:'cfg',n:$('n').value,tm:$('tm').value})};
   c.onmessage=recv;c.onclose=drop;
 }
 function drop(){if(seat<0)return;dc=null;seat=-1;rdy=[false,false];lock();ns('Disconnected. You can keep playing on this device or reconnect.');if(ph=='count')toLobby();else info()}
@@ -1049,8 +1184,8 @@ function relaySub(h){
   e.onerror=()=>{if(!ok&&es===e){closeRel();ns('Could not reach the relay. Check your connection, or use manual connect below.')}};
 }
 const watchConn=()=>setTimeout(()=>{if(seat<0&&ph=='lobby')ns('Still not connected. If you are on different networks, the host should tick "Different networks" and create a new room.')},20000);
-async function hostRoom(){
-  closeRel();mk();me=0;room=newRoom();const p=pc2;wire(p.createDataChannel('g'));$('go').textContent='Connect';
+async function hostRoomWithCode(forcedCode){
+  closeRel();mk();me=0;room=forcedCode||newRoom();const p=pc2;wire(p.createDataChannel('g'));$('go').textContent='Connect';
   showRoom();ns('Creating room…');
   await p.setLocalDescription(await p.createOffer());await ice();
   if(p!==pc2)return;
@@ -1062,6 +1197,7 @@ async function hostRoom(){
   try{await relayPub('offer',c);ns('Room is open. Give your friend the code and wait here.')}
   catch(e){closeRel();ns('Could not reach the relay. Use manual connect below.')}
 }
+async function hostRoom(){ return hostRoomWithCode(); }
 function joinRoom(raw){
   raw=String(raw||'');const m=raw.match(/room=([A-Za-z0-9]{6})/),c=(m?m[1]:raw).toUpperCase().replace(/[^A-Z0-9]/g,'');
   if(c.length!==6){ns('Room codes have 6 characters.');return}
@@ -1082,7 +1218,9 @@ $('th').onclick=()=>th(document.documentElement.dataset.theme=='dark'?'light':'d
 let t0;try{t0=localStorage.getItem('sp-theme')}catch(e){}
 th(t0||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
 setInterval(clockTick,200);
-spots=[];lines=[];hist=[];turn=0;over=false;setMute(mute);setPh('lobby');info();draw();syncEloAndServer();renderLeaderboard();
+spots=[];lines=[];hist=[];turn=0;over=false;setMute(mute);setPh('lobby');
+if(myCustomName){names[0]=myCustomName;$('p0').value=myCustomName;$('my-name-input').value=myCustomName;}
+info();draw();syncEloAndServer();renderLeaderboard();
 {const r=location.hash.match(/room=([A-Za-z0-9]{6})/);if(r){history.replaceState(null,'',location.href.split('#')[0]);$('net').open=true;joinRoom(r[1])}}
 {const m=location.hash.match(/join=([^&\s]+)/);if(m){history.replaceState(null,'',location.href.split('#')[0]);$('net').open=true;$('i').value=decodeURIComponent(m[1]);auto();$('net').scrollIntoView({block:'nearest'})}}
 </script></body></html>
