@@ -1,1519 +1,993 @@
-<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sprouts — Strategic Graph Game</title>
-<style>
-:root {
-  --desk: #e6eef4;
-  --desk-grad: radial-gradient(circle at 15% 15%, rgba(214, 51, 108, 0.08), transparent 40%), radial-gradient(circle at 85% 85%, rgba(28, 126, 214, 0.09), transparent 45%), linear-gradient(135deg, #e2ebf2 0%, #eef4f8 100%);
-  --paper: #fbfdfe;
-  --grid: #dde8ee;
-  --ink: #15222c;
-  --mut: #596c79;
-  --p1: #d6336c;
-  --p2: #1c7ed6;
-  --card: rgba(255, 255, 255, 0.84);
-  --card-solid: #ffffff;
-  --line: rgba(180, 198, 210, 0.65);
-  --sh: 0 2px 4px rgba(21, 34, 44, 0.04), 0 12px 32px rgba(21, 34, 44, 0.08);
-  --sh-lg: 0 8px 24px rgba(21, 34, 44, 0.12), 0 24px 60px rgba(21, 34, 44, 0.16);
-  --gold: #f59f00;
-  --acc: #7950f2;
-  --f: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-}
-@media all {
-  :root[data-theme=dark] {
-    color-scheme: dark;
-    --desk: #0a1218;
-    --desk-grad: radial-gradient(circle at 15% 15%, rgba(255, 107, 154, 0.11), transparent 42%), radial-gradient(circle at 85% 85%, rgba(95, 176, 255, 0.11), transparent 45%), linear-gradient(135deg, #091016 0%, #101c26 100%);
-    --paper: #12202b;
-    --grid: #1b2e3d;
-    --ink: #eaf2f7;
-    --mut: #8ba0ae;
-    --p1: #ff6b9a;
-    --p2: #5fb0ff;
-    --card: rgba(22, 38, 50, 0.82);
-    --card-solid: #182936;
-    --line: rgba(56, 85, 104, 0.65);
-    --sh: 0 2px 6px rgba(0, 0, 0, 0.35), 0 14px 36px rgba(0, 0, 0, 0.42);
-    --sh-lg: 0 12px 32px rgba(0, 0, 0, 0.55), 0 28px 68px rgba(0, 0, 0, 0.65);
-    --gold: #fcc419;
-    --acc: #9775fa;
-  }
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  min-height: 100vh;
-  padding: clamp(10px, 2.5vw, 26px);
-  background: var(--desk);
-  background-image: var(--desk-grad);
-  background-attachment: fixed;
-  color: var(--ink);
-  font: 15px/1.5 var(--f);
-  -webkit-font-smoothing: antialiased;
-}
-main {
-  max-width: 980px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
+const express = require('express');
+const http = require('http');
+const path = require('path');
+const crypto = require('crypto');
+const fs = require('fs');
+const { Server } = require('socket.io');
 
-/* Header */
-header {
-  display: flex;
-  align-items: center;
-  gap: 8px 12px;
-  flex-wrap: wrap;
-  padding: 6px 4px;
-}
-.brand-wrap {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-h1 {
-  font: 800 1.85rem/1 var(--f);
-  margin: 0;
-  letter-spacing: -0.035em;
-  background: linear-gradient(135deg, var(--p1), var(--p2));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-header p {
-  margin: 0;
-  color: var(--mut);
-  font-size: 0.88rem;
-  font-weight: 500;
-}
-.hdr-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
+const PORT = process.env.PORT || 3000;
+const START_ELO = 500;
+const K_FACTOR = 32;
+const ALLOWED_NODE_COUNTS = [2, 3, 4, 5, 6, 7, 8];
+const MATCH_MINUTES = 5;
+const PID_RE = /^[A-Za-z0-9_-]{8,64}$/;
 
-/* Buttons & Inputs */
-select, input[type=number], button {
-  font: inherit;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--ink);
-  background: var(--card);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 7px 13px;
-  cursor: pointer;
-  transition: transform 0.14s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, opacity 0.15s ease;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-}
-input[type=number] {
-  width: 5.2em;
-  padding: 6px 8px;
-  cursor: text;
-  text-align: center;
-  -moz-appearance: textfield;
-}
-input[type=number]::-webkit-inner-spin-button { opacity: 0.5; }
-input:disabled, select:disabled { opacity: 0.55; cursor: default; }
-button:hover:not(:disabled), select:hover:not(:disabled) {
-  border-color: var(--ink);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-button:active:not(:disabled) { transform: translateY(0); }
-button.pri {
-  background: linear-gradient(135deg, var(--ink), color-mix(in srgb, var(--ink) 82%, var(--p2)));
-  color: var(--paper);
-  border-color: transparent;
-}
-button.btn-fx {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--acc) 18%, var(--card-solid)), color-mix(in srgb, var(--p1) 14%, var(--card-solid)));
-  border-color: color-mix(in srgb, var(--acc) 45%, var(--line));
-}
-button.btn-wheel {
-  background: linear-gradient(135deg, #f59f00, #e8590c);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 0 14px rgba(245, 159, 0, 0.35);
-}
-.spin-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 99px;
-  background: #fff;
-  color: #d9480f;
-  font-size: 0.72rem;
-  font-weight: 800;
-  margin-left: 4px;
-}
-button:disabled { opacity: 0.4; cursor: default; transform: none; box-shadow: none; }
-:focus-visible { outline: 3px solid var(--p2); outline-offset: 2px; }
+// Lucky Wheel & Reconnect constants
+const WHEEL_MILESTONE_STEP = 3;
+const WHEEL_SPIN_DURATION_MS = 3600;
+const GUESS_TIMEOUT = 10000;
+const WHEEL_RESULT_HOLD_MS = 2400;
+const WHEEL_GUESS_RESULT_HOLD_MS = 3200;
+const RECONNECT_GRACE_MS = 12000;
 
-/* Player Cards */
-.players {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.pl {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px 15px;
-  background: var(--card);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  box-shadow: var(--sh);
-  transition: border-color 0.25s, box-shadow 0.25s, transform 0.2s;
-  overflow: hidden;
-}
-.pl::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--c);
-  opacity: 0.45;
-  transition: opacity 0.25s, height 0.25s;
-}
-.pl-top {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.pl-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--c) 16%, var(--paper));
-  border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  position: relative;
-  font-size: 0.95rem;
-}
-.pl-avatar i {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: var(--c);
-  box-shadow: 0 0 8px var(--c);
-}
-.pl input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-  font-size: 1rem;
-  font-weight: 700;
-}
-.pl em {
-  font-style: normal;
-  font-size: 0.72rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 2px 9px;
-  border-radius: 99px;
-  background: var(--c);
-  color: var(--paper);
-  white-space: nowrap;
-}
-.pl.on, .pl:focus-within {
-  border-color: var(--c);
-}
-.pl.on {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 22%, transparent), 0 10px 28px color-mix(in srgb, var(--c) 15%, transparent);
-  transform: translateY(-1px);
-}
-.pl.on::before {
-  opacity: 1;
-  height: 4px;
-}
-.pl input:disabled { opacity: 0.85; }
-
-/* Player Meta (Score, Elo, Streak, Buffs) */
-.pl-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding-top: 6px;
-  border-top: 1px dashed color-mix(in srgb, var(--line) 70%, transparent);
-  font-size: 0.78rem;
-}
-.pl-badges {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.stat-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--ink) 5%, var(--paper));
-  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
-  color: var(--ink);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.stat-pill b { font-weight: 800; color: var(--c); }
-.pl-buffs {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.buff-mini {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--gold) 18%, var(--paper));
-  border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent);
-  font-size: 0.8rem;
-  cursor: help;
-}
-
-/* Milestone Bar */
-.ms-bar-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.72rem;
-  color: var(--mut);
-}
-.ms-track {
-  flex: 1;
-  height: 6px;
-  border-radius: 99px;
-  background: color-mix(in srgb, var(--ink) 10%, transparent);
-  overflow: hidden;
-  position: relative;
-}
-.ms-fill {
-  height: 100%;
-  border-radius: 99px;
-  background: linear-gradient(90deg, var(--c), var(--gold));
-  transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.ms-fill.near {
-  box-shadow: 0 0 8px var(--gold);
-}
-
-/* Status & Clocks */
-#st {
-  min-height: 1.6em;
-  font-size: 0.95rem;
-  font-weight: 500;
-  padding: 4px 10px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--card) 60%, transparent);
-  border: 1px solid color-mix(in srgb, var(--line) 50%, transparent);
-}
-.clk {
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  font-size: 0.92rem;
-  color: var(--mut);
-  min-width: 3.4ch;
-  text-align: right;
-}
-.pl.on .clk { color: var(--ink); }
-.clk.low { color: #e03131 !important; animation: bl 1s infinite; }
-@keyframes bl { 50% { opacity: 0.4; } }
-
-/* Lobby & Sheet */
-body[data-ph=lobby] .sheet,
-body[data-ph=lobby] .bar,
-body[data-ph=count] .sheet,
-body[data-ph=count] .bar,
-body[data-ph=play] #lobby,
-body[data-ph=play] #net {
-  display: none;
-}
-.lob {
-  position: relative;
-  background: var(--card);
-  backdrop-filter: blur(14px);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  box-shadow: var(--sh);
-  padding: 18px 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  overflow: hidden;
-}
-.lob-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.lob h2 { font: 700 1.15rem/1 var(--f); margin: 0; }
-.mode-pill {
-  font-size: 0.76rem;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 99px;
-  background: color-mix(in srgb, var(--p2) 15%, var(--paper));
-  color: var(--p2);
-  border: 1px solid color-mix(in srgb, var(--p2) 35%, transparent);
-}
-.mode-pill.online {
-  background: color-mix(in srgb, #2b8a3e 16%, var(--paper));
-  color: #2b8a3e;
-  border-color: color-mix(in srgb, #2b8a3e 40%, transparent);
-}
-.lob p { margin: 0; color: var(--mut); max-width: 72ch; font-size: 0.9rem; }
-.lob small { color: var(--mut); font-size: 0.8rem; }
-.lrow { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; }
-.lrow label { display: flex; align-items: center; gap: 8px; color: var(--mut); font-size: 0.9rem; font-weight: 500; }
-.rd { padding: 4px 14px; font-size: 0.82rem; white-space: nowrap; border-radius: 99px; }
-.rd[hidden] { display: none; }
-.rd.on { background: var(--c); color: var(--paper); border-color: var(--c); box-shadow: 0 0 10px color-mix(in srgb, var(--c) 40%, transparent); }
-
-/* Game Board */
-.sheet {
-  position: relative;
-  background: var(--paper);
-  border: 1.5px solid var(--line);
-  border-radius: 18px;
-  box-shadow: var(--sh-lg);
-  padding: 8px;
-  transition: border-color 0.25s, box-shadow 0.25s;
-}
-canvas#c {
-  display: block;
-  width: 100%;
-  aspect-ratio: 3/2;
-  touch-action: none;
-  border-radius: 12px;
-  background: var(--paper);
-  cursor: grab;
-}
-.bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  padding: 8px 12px;
-  background: var(--card);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: var(--sh);
-}
-.bar label { display: flex; align-items: center; gap: 6px; color: var(--mut); font-size: 0.9rem; }
-.sp { flex: 1; }
-
-/* Overlays inside Sheet */
-#lot {
-  position: absolute;
-  inset: 10px;
-  z-index: 2;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--paper) 84%, transparent);
-  backdrop-filter: blur(5px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  text-align: center;
-  padding: 12px;
-}
-#lot[hidden] { display: none; }
-.lr { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
-.lr span {
-  min-width: 9ch;
-  padding: 12px 22px;
-  border-radius: 14px;
-  border: 1.5px solid var(--line);
-  background: var(--card-solid);
-  font: 700 1.1rem var(--f);
-  color: var(--mut);
-  text-align: center;
-  transition: transform 0.12s, border-color 0.12s, color 0.12s, box-shadow 0.12s;
-}
-.lr span.hl {
-  border-color: var(--c);
-  color: var(--c);
-  transform: scale(1.06);
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--c) 18%, transparent);
-}
-#cd, #bn {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  z-index: 3;
-}
-#cd {
-  background: color-mix(in srgb, var(--card-solid) 90%, transparent);
-  font: 800 clamp(1.6rem, 5vw, 2.5rem) var(--f);
-  letter-spacing: -0.02em;
-}
-#bn {
-  z-index: 4;
-  font: 800 clamp(1.15rem, 3.6vw, 1.85rem) var(--f);
-  letter-spacing: -0.02em;
-  color: var(--c, var(--ink));
-  text-shadow: 0 2px 18px var(--paper);
-  text-align: center;
-  padding: 0 18px;
-}
-#cd[hidden], #bn[hidden] { display: none; }
-#cd b, #bn b {
-  font-weight: inherit;
-  background: color-mix(in srgb, var(--card-solid) 92%, transparent);
-  padding: 10px 22px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  box-shadow: var(--sh);
-  animation: pop var(--d, 1.1s) cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-@keyframes pop {
-  0% { transform: translateY(8px) scale(0.96); opacity: 0; }
-  12% { transform: none; opacity: 1; }
-  82% { opacity: 1; }
-  100% { opacity: 0; }
-}
-@keyframes wn {
-  50% { box-shadow: 0 0 0 5px rgba(224, 49, 49, 0.55), var(--sh-lg); }
-}
-.sheet.warn { animation: wn 1s infinite; }
-
-/* Details & Network */
-details {
-  background: var(--card);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px 18px;
-  color: var(--mut);
-  box-shadow: var(--sh);
-}
-summary { cursor: pointer; color: var(--ink); font-weight: 600; }
-details p { max-width: 72ch; }
-textarea {
-  display: block;
-  width: 100%;
-  height: 4.5em;
-  margin: 4px 0 10px;
-  padding: 8px 10px;
-  font: 12px/1.35 ui-monospace, monospace;
-  color: var(--ink);
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  resize: vertical;
-}
-.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 8px; }
-#rin, #rcode {
-  font: 700 1rem ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink);
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 7px 10px;
-  width: 12ch;
-  text-align: center;
-}
-#rcode { font-size: 1.35rem; width: 9ch; border-color: var(--ink); }
-#rin::placeholder { letter-spacing: 0.06em; font-weight: 500; }
-#net details { margin-top: 8px; }
-#net .row span { color: var(--mut); }
-
-/* Quiz Modal Styles */
-#quiz-modal {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  background: color-mix(in srgb, var(--paper) 88%, rgba(0, 0, 0, 0.35));
-  backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  border-radius: 16px;
-}
-#quiz-modal[hidden] { display: none; }
-.quiz-card {
-  background: var(--card-solid);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  box-shadow: var(--sh-lg);
-  width: 100%;
-  max-width: 540px;
-  padding: 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.quiz-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.quiz-title { font: 700 1.1rem var(--f); margin: 0; color: var(--ink); }
-.quiz-progress {
-  font-weight: 700;
-  font-size: 0.85rem;
-  padding: 3px 11px;
-  border-radius: 99px;
-  background: color-mix(in srgb, var(--p2) 15%, transparent);
-  color: var(--p2);
-  white-space: nowrap;
-}
-.quiz-question { font-size: 1rem; font-weight: 600; margin: 0; line-height: 1.45; color: var(--ink); }
-.quiz-options { display: flex; flex-direction: column; gap: 8px; }
-.quiz-option {
-  text-align: left;
-  padding: 11px 15px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--paper);
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.92rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.18s;
-}
-.quiz-option:hover:not(:disabled) {
-  border-color: var(--p2);
-  background: color-mix(in srgb, var(--p2) 8%, var(--paper));
-}
-.quiz-option.correct {
-  background: color-mix(in srgb, #2b8a3e 16%, var(--paper));
-  border-color: #2b8a3e;
-  color: #2b8a3e;
-  font-weight: 700;
-}
-.quiz-option.incorrect {
-  background: color-mix(in srgb, #e03131 16%, var(--paper));
-  border-color: #e03131;
-  color: #e03131;
-  font-weight: 700;
-}
-.quiz-feedback { font-weight: 700; min-height: 1.5em; text-align: center; font-size: 0.92rem; }
-
-/* Global Modals (Lucky Wheel & Effects/Stats) */
-.g-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: rgba(10, 18, 24, 0.65);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  overflow-y: auto;
-}
-.g-modal[hidden] { display: none; }
-.g-card {
-  background: var(--card-solid);
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  box-shadow: var(--sh-lg);
-  width: 100%;
-  max-width: 680px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: modalIn 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-@keyframes modalIn {
-  from { transform: translateY(14px) scale(0.97); opacity: 0; }
-  to { transform: none; opacity: 1; }
-}
-.g-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 22px;
-  border-bottom: 1px solid var(--line);
-}
-.g-head h3 { margin: 0; font: 800 1.2rem var(--f); display: flex; align-items: center; gap: 8px; }
-.g-body {
-  padding: 20px 22px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-/* Lucky Wheel Specifics */
-.wheel-card {
-  max-width: 480px;
-  text-align: center;
-}
-.wheel-stage {
-  position: relative;
-  width: 310px;
-  height: 310px;
-  margin: 6px auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-#wheel-cv {
-  width: 100%;
-  height: 100%;
-  display: block;
-  border-radius: 50%;
-  box-shadow: 0 0 28px rgba(245, 159, 0, 0.25);
-}
-.wheel-pointer {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 14px solid transparent;
-  border-right: 14px solid transparent;
-  border-top: 26px solid #e03131;
-  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));
-  z-index: 3;
-}
-.wheel-center-btn {
-  position: absolute;
-  width: 78px;
-  height: 78px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #ffd43b, #f08c00);
-  color: #15222c;
-  font-weight: 900;
-  font-size: 0.78rem;
-  line-height: 1.15;
-  border: 4px solid #fff;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 6px;
-  z-index: 4;
-  cursor: pointer;
-}
-.wheel-center-btn:hover:not(:disabled) {
-  transform: scale(1.06);
-  border-color: #fff9db;
-}
-.wheel-res-box {
-  min-height: 3.4em;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--gold) 12%, var(--paper));
-  border: 1px solid color-mix(in srgb, var(--gold) 40%, var(--line));
-  font-weight: 700;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-
-/* Profile & Stats Tabs */
-.prof-tabs {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.prof-tab {
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 0.84rem;
-}
-.prof-tab.active {
-  background: var(--ink);
-  color: var(--paper);
-  border-color: var(--ink);
-}
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
-  gap: 10px;
-}
-.stat-box {
-  padding: 12px;
-  border-radius: 12px;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.stat-box span { font-size: 0.75rem; color: var(--mut); font-weight: 600; }
-.stat-box strong { font-size: 1.25rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
-.inv-list, .hist-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 240px;
-  overflow-y: auto;
-}
-.inv-item, .hist-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  font-size: 0.85rem;
-}
-.tag-status {
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 99px;
-}
-.tag-status.Pending, .tag-status.Active {
-  background: color-mix(in srgb, #2b8a3e 16%, transparent);
-  color: #2b8a3e;
-}
-.tag-status.Used {
-  background: color-mix(in srgb, var(--mut) 16%, transparent);
-  color: var(--mut);
-}
-
-@media (max-width: 620px) {
-  .players { grid-template-columns: 1fr; }
-  .wheel-stage { width: 260px; height: 260px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .clk.low, .sheet.warn, #cd b, #bn b, .g-card { animation: none; }
-  .lr span, button, .pl { transition: none; }
-}
-</style></head><body data-ph="lobby"><main>
-<header>
-  <div class="brand-wrap">
-    <h1>Sprouts</h1>
-    <p>Draw curves, grow new spots, and leave your opponent without a move.</p>
-  </div>
-  <span class="sp"></span>
-  <div class="hdr-actions">
-    <button id="btn-wheel-open" class="btn-wheel" title="Open Lucky Effect Wheel">🎡 Lucky Wheel <span id="wheel-spin-cnt" class="spin-badge">0</span></button>
-    <button id="btn-stats-open" class="btn-fx" title="Player Effects, Buffs & Match History">🎁 EFFECTS & STATS</button>
-    <button id="mu"></button>
-    <button id="th"></button>
-  </div>
-</header>
-
-<section class="players">
-  <div class="pl" id="c0" style="--c:var(--p1)">
-    <div class="pl-top">
-      <div class="pl-avatar" title="Player 1"><i></i></div>
-      <input id="p0" maxlength="20" value="Player 1" aria-label="Player 1 name">
-      <em id="t0" hidden></em>
-      <button class="rd" id="r0"></button>
-      <span class="clk" id="k0"></span>
-    </div>
-    <div class="pl-meta">
-      <div class="pl-badges">
-        <span class="stat-pill" title="Total Score">🏆 <b id="sc0">0</b></span>
-        <span class="stat-pill" title="Elo Rating">⚡ <b id="el0">1000</b></span>
-        <span class="stat-pill" title="Current Win Streak">🔥 <b id="st0">0</b></span>
-      </div>
-      <div class="pl-buffs" id="bf0" title="Active / Pending Buffs"></div>
-    </div>
-    <div class="ms-bar-wrap">
-      <span id="ms-txt0">Streak Milestone: 0/2</span>
-      <div class="ms-track"><div class="ms-fill" id="ms-bar0" style="width:0%"></div></div>
-    </div>
-  </div>
-
-  <div class="pl" id="c1" style="--c:var(--p2)">
-    <div class="pl-top">
-      <div class="pl-avatar" title="Player 2"><i></i></div>
-      <input id="p1" maxlength="20" value="Player 2" aria-label="Player 2 name">
-      <em id="t1" hidden></em>
-      <button class="rd" id="r1"></button>
-      <span class="clk" id="k1"></span>
-    </div>
-    <div class="pl-meta">
-      <div class="pl-badges">
-        <span class="stat-pill" title="Total Score">🏆 <b id="sc1">0</b></span>
-        <span class="stat-pill" title="Elo Rating">⚡ <b id="el1">1000</b></span>
-        <span class="stat-pill" title="Current Win Streak">🔥 <b id="st1">0</b></span>
-      </div>
-      <div class="pl-buffs" id="bf1" title="Active / Pending Buffs"></div>
-    </div>
-    <div class="ms-bar-wrap">
-      <span id="ms-txt1">Streak Milestone: 0/2</span>
-      <div class="ms-track"><div class="ms-fill" id="ms-bar1" style="width:0%"></div></div>
-    </div>
-  </div>
-</section>
-
-<div id="st" role="status"></div>
-
-<section class="lob" id="lobby">
-  <div class="lob-head">
-    <h2>Lobby</h2>
-    <span id="lob-mode-pill" class="mode-pill">🏠 Local Mode (2 Players / 1 Device)</span>
-  </div>
-  <p id="lm"></p>
-  <div class="lrow">
-    <label>Spots
-      <select id="n">
-        <option value="4">4 Nodes</option>
-        <option value="5" selected>5 Nodes</option>
-        <option value="6">6 Nodes</option>
-      </select>
-    </label>
-    <label>Minutes per player
-      <input id="tm" type="number" min="0" max="999" step="any" value="5" inputmode="decimal" aria-label="Minutes per player, 0 for no limit">
-    </label>
-    <small>0 = no time limit (⏳ Time Bonus +30s activates when &gt; 0)</small>
-  </div>
-  <p>Rules lock once the match starts. Win 2 matches in a row to earn a <b>🎡 Lucky Effect Wheel</b> spin!</p>
-  <div id="cd" hidden></div>
-</section>
-
-<div class="sheet" id="sheet">
-  <canvas id="c"></canvas>
-  <div id="bn" hidden></div>
-  <div id="lot" hidden><div class="lr"><span id="l0" style="--c:var(--p1)"></span><span id="l1" style="--c:var(--p2)"></span></div></div>
-  <!-- Quiz Modal Overlay -->
-  <div id="quiz-modal" hidden>
-    <div class="quiz-card">
-      <div class="quiz-header">
-        <h3 id="q-mode-title" class="quiz-title">Thử thách Quiz</h3>
-        <span id="q-prog" class="quiz-progress">0/3</span>
-      </div>
-      <p id="q-text" class="quiz-question">Đang tải câu hỏi...</p>
-      <div id="q-options" class="quiz-options"></div>
-      <div id="q-fb" class="quiz-feedback"></div>
-    </div>
-  </div>
-</div>
-
-<div class="bar">
-  <span class="sp"></span>
-  <button id="zo" title="Zoom out" aria-label="Zoom out">−</button>
-  <button id="zi" title="Zoom in" aria-label="Zoom in">+</button>
-  <button id="ft" title="Fit everything in view">Fit</button>
-  <button id="un">Undo</button>
-  <button id="nw" class="pri">New game</button>
-</div>
-
-<!-- Lucky Effect Wheel Modal -->
-<div id="wheel-modal" class="g-modal" hidden>
-  <div class="g-card wheel-card">
-    <div class="g-head">
-      <h3>🎡 Lucky Effect Wheel</h3>
-      <button id="wheel-close">✕</button>
-    </div>
-    <div class="g-body">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-        <label style="font-size:0.85rem;font-weight:600">Player:
-          <select id="wheel-player-sel">
-            <option value="0">Player 1</option>
-            <option value="1">Player 2</option>
-          </select>
-        </label>
-        <label style="font-size:0.82rem;color:var(--mut);display:flex;align-items:center;gap:5px;cursor:pointer">
-          <input type="checkbox" id="wheel-test-chk"> 🧪 Test Mode (No Save)
-        </label>
-      </div>
-      <div class="wheel-stage">
-        <div class="wheel-pointer"></div>
-        <canvas id="wheel-cv" width="600" height="600"></canvas>
-        <button id="wheel-spin-btn" class="wheel-center-btn">QUAY<br>NGAY</button>
-      </div>
-      <div id="wheel-res" class="wheel-res-box">
-        <span id="wheel-res-txt">Nhấn QUAY NGAY để nhận Buff ngẫu nhiên!</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Player Profile, Inventory & History Modal -->
-<div id="stats-modal" class="g-modal" hidden>
-  <div class="g-card">
-    <div class="g-head">
-      <h3>🎁 Player Effects, Progression & History</h3>
-      <button id="stats-close">✕</button>
-    </div>
-    <div class="g-body">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-        <div class="prof-tabs">
-          <button id="tab-p0" class="prof-tab active">Player 1</button>
-          <button id="tab-p1" class="prof-tab">Player 2</button>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <label style="font-size:0.8rem;color:var(--mut)">Milestone Step:
-            <select id="ms-step-sel" style="padding:4px 8px">
-              <option value="2">Every 2 Wins</option>
-              <option value="3">Every 3 Wins</option>
-              <option value="5">Every 5 Wins</option>
-              <option value="10">Every 10 Wins</option>
-            </select>
-          </label>
-          <button id="btn-reset-stats" style="color:#e03131;border-color:rgba(224,49,49,0.35);padding:5px 10px;font-size:0.8rem">Reset Stats</button>
-        </div>
-      </div>
-
-      <div class="stats-grid" id="prof-stats-grid"></div>
-
-      <div>
-        <h4 style="margin:0 0 8px;font-size:0.95rem">🎒 Buff Inventory (Active / Pending / Used)</h4>
-        <div class="inv-list" id="prof-inv-list"></div>
-      </div>
-
-      <div>
-        <h4 style="margin:0 0 8px;font-size:0.95rem">⚔️ Match History</h4>
-        <div class="hist-list" id="prof-match-list"></div>
-      </div>
-
-      <div>
-        <h4 style="margin:0 0 8px;font-size:0.95rem">🎡 Lucky Wheel History</h4>
-        <div class="hist-list" id="prof-wheel-list"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<details><summary>How to play</summary>
-<p>Players alternate. On your turn, press on a spot and drag to another spot (or back to the same spot to make a loop). The curve may not cross any line, itself included, or pass through another spot. A new spot is then placed at the middle of your curve.</p>
-<p>The board is endless. Scroll or pinch to zoom, and drag empty space to move the view. Lines are elastic: between moves they pull straight and push each other apart, so the drawing keeps rearranging itself and never clogs.</p>
-<p>Each spot can have at most 3 lines. The number inside a spot is how many it can still take; a filled spot is full. The player who cannot move loses.</p>
-<p>Both players start in the lobby: choose the rules, then each press Ready. Once both are ready the match begins, a quick draw picks who moves first, and names and rules stay locked. The host can set the clock to any number of minutes (0 for no limit). Each player has a clock that runs only on their turn, and running out of time loses the game. Use the Dark mode button at the top to switch themes.</p>
-</details>
-<details id="net" open><summary>Play on two devices</summary>
-<p>Host presses <b>Create room</b> and shares the 6-character code (or link). The other player types the code and presses <b>Join room</b>. That's it: the two devices find each other and connect. The host is player 1 and chooses the rules; once connected you meet in the lobby and both press Ready.</p>
-<div class="row"><button id="rmk" class="pri">Create room</button><span>or</span><input id="rin" maxlength="40" placeholder="ROOM CODE" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Room code"><button id="rjn">Join room</button></div>
-<div class="row"><label><input type="checkbox" id="stun"> Different networks (needs internet)</label></div>
-<div class="row" id="rbox" hidden><span>Room</span><input id="rcode" class="big" readonly size="7" aria-label="Your room code"><button id="rcpy">Copy code</button><button id="rlnk" hidden>Copy link</button><button id="rshr" hidden>Share</button></div>
-<p id="ns" role="status"></p>
-<details id="man"><summary>Connect manually (no relay needed)</summary>
-<p>If the relay is unreachable, <b>Host</b> creates an invite (a link when this page is online, otherwise a code) and copies it. Send it over; the other player opens the link or presses <b>Paste</b>. They send their reply back and the host presses <b>Paste</b>.</p>
-<div class="row"><button id="host">Host</button><button id="join">Join</button></div>
-<label for="o">Code to send</label><textarea id="o" readonly></textarea><div class="row"><button id="cp">Copy</button><button id="sh" hidden>Share</button></div>
-<label for="i">Code received</label><textarea id="i" placeholder="Paste the invite or reply here"></textarea><div class="row"><button id="pa">Paste</button><button id="go" disabled>Connect</button></div>
-</details></details>
-</main>
-<script>
-const $=id=>document.getElementById(id),cv=$('c'),g=cv.getContext('2d');
-const W=900,H=600,R=11,D=2;cv.width=W*D;cv.height=H*D;
-const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim(),pc=p=>css(p?'--p2':'--p1');
-let spots,lines,turn,over,hist,cur,dc,pc2,go=false,tout=false,lim=0,clk=[0,0],last=0,lt=0,hov=-1,me=-1,seat=-1,run=false,fc=0,pan=null,pv=null,cam={x:0,y:0,z:1};
-const names=['Player 1','Player 2'],ptr=new Map();
-let ph='lobby',rdy=[false,false],cdt=0,rz=false,rzA=false,ended=false,warned=false,lsec=-1,bt=0,fxr=false,mute=false,ac;const fx=[];
-try{mute=localStorage.getItem('sp-mute')=='1'}catch(e){}
-
-// Biến định danh trận đấu hiện tại để chống cộng điểm trùng (Idempotency)
-let currentMatchId = '';
-let reducedMotion = false;
-try { reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e) {}
-
-// ============================================================================
-// MODULE 1: BUFF MANAGER & DEFINITIONS
-// ============================================================================
-const BUFF_DEFS = [
-  { id: 'DOUBLE_SCORE', name: 'Double Score', icon: '⚡', color: '#f59f00', desc: 'Nhân đôi (2x) điểm thắng ở trận tiếp theo. Có thể kết hợp với Quiz 1.5x.' },
-  { id: 'ELO_SHIELD',   name: 'Elo Shield',   icon: '🛡️', color: '#1c7ed6', desc: 'Bảo vệ Elo: Nếu thua trận tiếp theo sẽ không bị trừ Elo.' },
-  { id: 'INSTANT_15',   name: 'Instant +15',  icon: '💎', color: '#12b886', desc: 'Cộng trực tiếp +15 điểm vào Total Score ngay khi quay trúng.' },
-  { id: 'STREAK_BOOST', name: 'Streak Boost', icon: '🔥', color: '#e8590c', desc: 'Cộng thêm +1 vào chuỗi thắng hiện tại (Bonus Streak).' },
-  { id: 'TIME_BONUS',   name: 'Time Bonus',   icon: '⏳', color: '#7950f2', desc: 'Cộng thêm +30 giây vào đồng hồ cá nhân ở trận tiếp theo có giới hạn giờ.' },
-  { id: 'KING_AURA',    name: 'King Aura',    icon: '👑', color: '#d6336c', desc: 'Cộng ngay +10 Elo và nhân 1.5x điểm thắng ở trận tiếp theo.' }
+const WHEEL_SEGMENTS = [
+  { type: 'x2', label: 'x2 ELO', short: 'x2', color: '#f59f00' },
+  { type: 'steal', label: 'Cướp 5% ELO', short: 'STEAL 5%', color: '#e03131' },
+  { type: 'guess_swap', label: 'Đoán Elo · Swap', short: 'SWAP', color: '#7950f2' },
+  { type: 'x2', label: 'x2 ELO', short: 'x2', color: '#f08c00' },
+  { type: 'steal', label: 'Cướp 5% ELO', short: 'STEAL 5%', color: '#c92a2a' },
+  { type: 'guess_swap', label: 'Đoán Elo · Swap', short: 'SWAP', color: '#6741d9' }
 ];
 
-// ============================================================================
-// MODULE 2: PLAYER PROFILE, PROGRESSION & WIN STREAK MANAGER
-// ============================================================================
-const STORAGE_KEY = 'sp_progression_v2';
-const DATA_VERSION = 2;
+const VIRTUAL_BOT_NAMES = [
+  'AstraBot', 'NovaBot', 'VertexBot', 'EulerBot', 'GraphBot', 'CipherBot'
+];
 
-function createDefaultProfile(slotIndex) {
-  return {
-    playerId: 'prof_slot_' + slotIndex + '_' + Math.random().toString(36).slice(2, 8),
-    slot: slotIndex,
-    totalScore: 0,
-    elo: 1000,
-    totalWins: 0,
-    totalLosses: 0,
-    currentStreak: 0,
-    bestStreak: 0,
-    totalMatches: 0,
-    availableSpins: 0,
-    claimedMilestones: [],
-    inventory: [],
-    matchHistory: [],
-    wheelHistory: []
-  };
+const app = express();
+app.disable('x-powered-by');
+const server = http.createServer(app);
+
+app.get('/healthz', (req, res) => res.status(200).send('ok'));
+app.get(['/', '/index.html'], (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.use(express.static(path.join(__dirname, 'public')));
+
+const io = new Server(server, {
+  cors: { origin: process.env.CORS_ORIGIN || '*', methods: ['GET', 'POST'] },
+  transports: ['websocket', 'polling']
+});
+
+const FALLBACK_QUESTIONS = [
+  {
+    id: 1,
+    question: "Trong trò chơi Sprouts, mỗi chấm (node) có thể nối tối đa bao nhiêu đường?",
+    options: { A: "2 đường", B: "3 đường", C: "4 đường", D: "Không giới hạn" },
+    correctAnswer: "B",
+    explanation: ""
+  },
+  {
+    id: 2,
+    question: "Khi vẽ một đường nối hợp lệ trong Sprouts, điều gì xảy ra ở giữa đường vừa vẽ?",
+    options: { A: "Xóa bỏ 1 chấm cũ", B: "Thêm 1 chấm mới có bậc 2", C: "Thêm 2 chấm mới", D: "Không có gì thay đổi" },
+    correctAnswer: "B",
+    explanation: ""
+  },
+  {
+    id: 3,
+    question: "Nếu trò chơi Sprouts bắt đầu với n chấm ban đầu, số nước đi tối đa có thể thực hiện là bao nhiêu?",
+    options: { A: "2n - 1", B: "3n - 1", C: "3n", D: "4n - 2" },
+    correctAnswer: "B",
+    explanation: ""
+  }
+];
+
+let questionsBank = [];
+try {
+  const qPath = path.join(__dirname, 'questions.json');
+  if (fs.existsSync(qPath)) {
+    const parsed = JSON.parse(fs.readFileSync(qPath, 'utf-8'));
+    if (Array.isArray(parsed) && parsed.length >= 3) questionsBank = parsed;
+  }
+} catch (e) {
+  console.error('Lỗi đọc questions.json:', e);
+}
+if (questionsBank.length < 3) questionsBank = FALLBACK_QUESTIONS;
+
+const ratings = new Map();
+const usernames = new Map();
+let waitingPlayer = null;
+let rooms = {};          // socketId -> room
+const roomsById = new Map(); // roomId -> room
+const pidToRoom = new Map(); // pid -> roomId (for active match reconnect)
+let users = {};          // socketId -> { pid }
+let quizSessions = {};   // sessionId -> session
+
+const cleanName = (x) => String(x == null ? '' : x).replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 16);
+const roundElo = (v) => Math.max(0, Number(Number(v).toFixed(1)));
+
+function isUsernameTaken(name, currentPid) {
+  const norm = name.toLowerCase();
+  return usernames.has(norm) && usernames.get(norm) !== currentPid;
 }
 
-const PlayerProfileManager = {
-  state: {
-    version: DATA_VERSION,
-    milestoneStep: 2,
-    processedMatches: {},
-    profiles: [createDefaultProfile(0), createDefaultProfile(1)],
-    remotePeerSummary: null
-  },
-
-  load() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        this.save();
-        return;
-      }
-      const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== 'object') throw new Error('Invalid schema');
-      this.state.version = DATA_VERSION;
-      this.state.milestoneStep = [2, 3, 5, 10].includes(Number(parsed.milestoneStep)) ? Number(parsed.milestoneStep) : 2;
-      this.state.processedMatches = (parsed.processedMatches && typeof parsed.processedMatches === 'object') ? parsed.processedMatches : {};
-      for (let i = 0; i < 2; i++) {
-        const def = createDefaultProfile(i);
-        const src = (Array.isArray(parsed.profiles) && parsed.profiles[i]) ? parsed.profiles[i] : {};
-        this.state.profiles[i] = {
-          playerId: typeof src.playerId === 'string' && src.playerId ? src.playerId : def.playerId,
-          slot: i,
-          totalScore: Number.isFinite(Number(src.totalScore)) ? Number(src.totalScore) : 0,
-          elo: Number.isFinite(Number(src.elo)) ? Number(src.elo) : 1000,
-          totalWins: Number.isFinite(Number(src.totalWins)) ? Math.max(0, Math.floor(Number(src.totalWins))) : 0,
-          totalLosses: Number.isFinite(Number(src.totalLosses)) ? Math.max(0, Math.floor(Number(src.totalLosses))) : 0,
-          currentStreak: Number.isFinite(Number(src.currentStreak)) ? Math.max(0, Math.floor(Number(src.currentStreak))) : 0,
-          bestStreak: Number.isFinite(Number(src.bestStreak)) ? Math.max(0, Math.floor(Number(src.bestStreak))) : 0,
-          totalMatches: Number.isFinite(Number(src.totalMatches)) ? Math.max(0, Math.floor(Number(src.totalMatches))) : 0,
-          availableSpins: Number.isFinite(Number(src.availableSpins)) ? Math.max(0, Math.floor(Number(src.availableSpins))) : 0,
-          claimedMilestones: Array.isArray(src.claimedMilestones) ? src.claimedMilestones : [],
-          inventory: Array.isArray(src.inventory) ? src.inventory : [],
-          matchHistory: Array.isArray(src.matchHistory) ? src.matchHistory.slice(0, 40) : [],
-          wheelHistory: Array.isArray(src.wheelHistory) ? src.wheelHistory.slice(0, 40) : []
-        };
-      }
-    } catch (e) {
-      console.warn('Khôi phục dữ liệu hồ sơ mặc định do dữ liệu cũ lỗi:', e);
-      this.state = {
-        version: DATA_VERSION,
-        milestoneStep: 2,
-        processedMatches: {},
-        profiles: [createDefaultProfile(0), createDefaultProfile(1)],
-        remotePeerSummary: null
-      };
-      this.save();
-    }
-  },
-
-  save() {
-    try {
-      const payload = {
-        version: this.state.version,
-        milestoneStep: this.state.milestoneStep,
-        processedMatches: this.state.processedMatches,
-        profiles: this.state.profiles
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    } catch (e) {}
-    this.updateUI();
-  },
-
-  getProfile(idx) {
-    return this.state.profiles[idx === 1 ? 1 : 0];
-  },
-
-  getPendingBuffs(idx) {
-    const p = this.getProfile(idx);
-    return p.inventory.filter(b => b.status === 'Pending' || b.status === 'Active');
-  },
-
-  hasPendingBuff(idx, buffId) {
-    return this.getPendingBuffs(idx).some(b => b.id === buffId);
-  },
-
-  consumeOneBuff(idx, buffId, matchId) {
-    const p = this.getProfile(idx);
-    const item = p.inventory.find(b => b.id === buffId && (b.status === 'Pending' || b.status === 'Active'));
-    if (item) {
-      item.status = 'Used';
-      item.usedAt = Date.now();
-      item.usedMatchId = matchId;
-      return true;
-    }
-    return false;
-  },
-
-  checkAndGrantMilestone(idx, sourceTag = 'match') {
-    const p = this.getProfile(idx);
-    const step = this.state.milestoneStep || 2;
-    let granted = 0;
-    if (p.currentStreak > 0 && p.currentStreak % step === 0) {
-      const msKey = `s_${p.totalWins}_${p.currentStreak}_${sourceTag}`;
-      if (!p.claimedMilestones.includes(msKey)) {
-        p.claimedMilestones.push(msKey);
-        p.availableSpins += 1;
-        granted += 1;
-      }
-    }
-    return granted;
-  },
-
-  grantBuffFromWheel(idx, buffDef) {
-    const p = this.getProfile(idx);
-    const now = Date.now();
-    let status = 'Pending';
-    let targetMatch = 'Next Match';
-
-    if (buffDef.id === 'INSTANT_15') {
-      p.totalScore = Math.round((p.totalScore + 15) * 100) / 100;
-      status = 'Used';
-      targetMatch = 'Applied Immediately (+15 Score)';
-    } else if (buffDef.id === 'STREAK_BOOST') {
-      p.currentStreak += 1;
-      if (p.currentStreak > p.bestStreak) p.bestStreak = p.currentStreak;
-      status = 'Used';
-      targetMatch = 'Applied Immediately (+1 Bonus Streak)';
-      // Kiểm tra milestone nhưng khóa tag 'boost' để không lặp vô hạn
-      this.checkAndGrantMilestone(idx, 'boost_once_' + now);
-    } else if (buffDef.id === 'KING_AURA') {
-      p.elo += 10;
-      status = 'Pending';
-      targetMatch = '+10 Elo Applied / 1.5x Next Win';
-    }
-
-    p.inventory.unshift({
-      uid: 'bf_' + now + '_' + Math.random().toString(36).slice(2, 6),
-      id: buffDef.id,
-      name: buffDef.name,
-      icon: buffDef.icon,
-      desc: buffDef.desc,
-      status,
-      obtainedAt: now,
-      targetMatch
-    });
-
-    p.wheelHistory.unshift({
-      id: buffDef.id,
-      name: buffDef.name,
-      icon: buffDef.icon,
-      time: now
-    });
-    if (p.wheelHistory.length > 40) p.wheelHistory.length = 40;
-
-    this.save();
-    MultiplayerSyncManager.broadcastProfile();
-  },
-
-  resetStats(idx) {
-    const oldId = this.state.profiles[idx].playerId;
-    const fresh = createDefaultProfile(idx);
-    fresh.playerId = oldId;
-    this.state.profiles[idx] = fresh;
-    this.save();
-    MultiplayerSyncManager.broadcastProfile();
-  },
-
-  getDisplayData(slotIdx) {
-    if (seat >= 0 && slotIdx !== seat && this.state.remotePeerSummary) {
-      return this.state.remotePeerSummary;
-    }
-    const p = this.getProfile(slotIdx);
-    return {
-      totalScore: p.totalScore,
-      elo: p.elo,
-      currentStreak: p.currentStreak,
-      bestStreak: p.bestStreak,
-      pendingBuffs: this.getPendingBuffs(slotIdx).map(b => ({ id: b.id, icon: b.icon, name: b.name }))
-    };
-  },
-
-  updateUI() {
-    const step = this.state.milestoneStep || 2;
-    [0, 1].forEach(i => {
-      const d = this.getDisplayData(i);
-      const scEl = $('sc' + i), elEl = $('el' + i), stEl = $('st' + i), bfEl = $('bf' + i);
-      if (scEl) scEl.textContent = Number(d.totalScore || 0).toFixed(Number.isInteger(d.totalScore) ? 0 : 1);
-      if (elEl) elEl.textContent = Math.round(d.elo || 1000);
-      if (stEl) stEl.textContent = d.currentStreak || 0;
-      if (bfEl) {
-        bfEl.innerHTML = '';
-        (d.pendingBuffs || []).slice(0, 5).forEach(b => {
-          const sp = document.createElement('span');
-          sp.className = 'buff-mini';
-          sp.textContent = b.icon;
-          sp.title = b.name + ' (Pending)';
-          bfEl.appendChild(sp);
-        });
-      }
-      const curS = d.currentStreak || 0;
-      const nextMs = (Math.floor(curS / step) + 1) * step;
-      const rem = nextMs - curS;
-      const prog = ((curS % step) / step) * 100;
-      const txtEl = $('ms-txt' + i), barEl = $('ms-bar' + i);
-      if (txtEl) txtEl.textContent = `Streak: ${curS} → Next Spin: ${nextMs} (${rem} left)`;
-      if (barEl) {
-        barEl.style.width = `${prog}%`;
-        barEl.classList.toggle('near', rem === 1);
-      }
-    });
-
-    const totalSpins = seat >= 0
-      ? this.getProfile(seat).availableSpins
-      : (this.getProfile(0).availableSpins + this.getProfile(1).availableSpins);
-    const cntEl = $('wheel-spin-cnt');
-    if (cntEl) cntEl.textContent = totalSpins;
-
-    const pill = $('lob-mode-pill');
-    if (pill) {
-      if (seat >= 0) {
-        pill.textContent = `🌐 Online Mode (You are ${names[seat]})`;
-        pill.classList.add('online');
+function identify(socket, data) {
+  const d = data && typeof data === 'object' ? data : {};
+  let u = users[socket.id];
+  if (!u) {
+    const pid = typeof d.pid === 'string' && PID_RE.test(d.pid) ? d.pid : 'anon_' + socket.id;
+    u = users[socket.id] = { pid };
+  }
+  let rec = ratings.get(u.pid);
+  if (!rec) {
+    let baseName = cleanName(d.name) || 'Player_' + crypto.randomBytes(2).toString('hex');
+    while (isUsernameTaken(baseName, u.pid)) baseName = 'Player_' + crypto.randomBytes(2).toString('hex');
+    rec = { pub: crypto.randomBytes(4).toString('hex'), name: baseName, elo: START_ELO, games: 0, wins: 0 };
+    ratings.set(u.pid, rec);
+    usernames.set(baseName.toLowerCase(), u.pid);
+  } else if (d.name !== undefined) {
+    const requestedName = cleanName(d.name);
+    if (requestedName) {
+      if (!isUsernameTaken(requestedName, u.pid)) {
+        usernames.delete(rec.name.toLowerCase());
+        rec.name = requestedName;
+        usernames.set(requestedName.toLowerCase(), u.pid);
+        socket.emit('name_result', { success: true, name: requestedName });
       } else {
-        pill.textContent = '🏠 Local Mode (2 Players / 1 Device)';
-        pill.classList.remove('online');
+        socket.emit('name_result', { success: false, message: 'Tên này đã có người sử dụng!' });
+        socket.emit('profile', profileOf(rec));
       }
     }
   }
-};
+  return rec;
+}
 
-// ============================================================================
-// MODULE 3: MULTIPLAYER SYNC MANAGER
-// ============================================================================
-const MultiplayerSyncManager = {
-  broadcastProfile() {
-    if (seat < 0) return;
-    const p = PlayerProfileManager.getProfile(seat);
-    send({
-      t: 'prof_sync',
-      seat,
-      summary: {
-        totalScore: p.totalScore,
-        elo: p.elo,
-        currentStreak: p.currentStreak,
-        bestStreak: p.bestStreak,
-        pendingBuffs: PlayerProfileManager.getPendingBuffs(seat).map(b => ({ id: b.id, icon: b.icon, name: b.name }))
-      }
-    });
-  },
-  handleRemoteProfile(msg) {
-    if (msg && msg.summary) {
-      PlayerProfileManager.state.remotePeerSummary = msg.summary;
-      PlayerProfileManager.updateUI();
+const recOf = (socketId) => (users[socketId] ? ratings.get(users[socketId].pid) : null);
+const recByPid = (pid) => (pid ? ratings.get(pid) : null);
+const profileOf = (rec) => ({ pub: rec.pub, name: rec.name, elo: rec.elo, games: rec.games });
+
+function getLeaderboard() {
+  const online = new Set(Object.values(users).map((u) => u.pid));
+  return [...ratings.entries()]
+    .filter(([pid, r]) => r.games > 0 || online.has(pid))
+    .map(([pid, r]) => ({ pub: r.pub, name: r.name, elo: r.elo, games: r.games, online: online.has(pid) }))
+    .sort((a, b) => b.elo - a.elo || b.games - a.games)
+    .slice(0, 10);
+}
+const broadcastLeaderboard = () => io.emit('leaderboard_update', getLeaderboard());
+
+function generateSpots(n = 3) {
+  const spots = [];
+  const W = 900, H = 600;
+  for (let t = 0; spots.length < n && t < 2000; t++) {
+    const p = { x: (Math.random() - 0.5) * (W - 140), y: (Math.random() - 0.5) * (H - 140), d: 0 };
+    if (spots.every((s) => Math.hypot(s.x - p.x, s.y - p.y) > (t > 1000 ? 70 : 130))) spots.push(p);
+  }
+  return spots;
+}
+
+function getRoomRole(room, socketId) {
+  if (!room) return -1;
+  if (room.p1 === socketId) return 0;
+  if (room.p2 === socketId) return 1;
+  return -1;
+}
+
+function getRoomSocket(room, role) {
+  const sid = role === 0 ? room.p1 : room.p2;
+  return sid ? io.sockets.sockets.get(sid) : null;
+}
+
+function getRoomRec(room, role) {
+  return recByPid(role === 0 ? room.p1Pid : room.p2Pid);
+}
+
+function clearWheelTimers(room) {
+  if (!room || !room.activeWheel) return;
+  if (room.activeWheel.resolveTimer) clearTimeout(room.activeWheel.resolveTimer);
+  if (room.activeWheel.completeTimer) clearTimeout(room.activeWheel.completeTimer);
+  room.activeWheel.resolveTimer = null;
+  room.activeWheel.completeTimer = null;
+}
+
+function clearDisconnectTimers(room) {
+  if (!room || !room.disconnectTimers) return;
+  [0, 1].forEach((r) => {
+    if (room.disconnectTimers[r]) {
+      clearTimeout(room.disconnectTimers[r]);
+      room.disconnectTimers[r] = null;
     }
-  }
-};
-
-// ---- UNIQUE PLAYER NAME & VALIDATION SYSTEM ----
-function normalizePlayerName(name) {
-  if (typeof name !== 'string') return '';
-  return name.trim().replace(/\s+/g, ' ');
-}
-
-function validateUniquePlayerName(name, playerId, currentNames) {
-  const norm = normalizePlayerName(name);
-  if (!norm || norm.length < 2 || norm.length > 20) return { valid: false, message: 'Tên phải từ 2 đến 20 ký tự và không được để trống.' };
-  
-  // Kiểm tra trùng với người chơi còn lại
-  for (let i = 0; i < currentNames.length; i++) {
-    if (i !== playerId && normalizePlayerName(currentNames[i]).toLowerCase() === norm.toLowerCase()) {
-      return { valid: false, message: 'Tên này đã được người chơi khác sử dụng.' };
-    }
-  }
-  return { valid: true, normalized: norm };
-}
-
-// ---- QUIZ SYSTEM & 100 QUESTIONS ----
-let quizBank = [];
-let quizSessionActive = false;
-let consecutiveCorrect = 0;
-let currentQuestion = null;
-let quizCompleted = false;
-let usedQuestionIds = new Set();
-let baseGameScore = 10; // Điểm gốc mặc định mỗi trận
-
-async function loadQuizData() {
-  try {
-    let res = await fetch('quizz.json');
-    if (!res.ok) res = await fetch('quiz-data.json');
-    const data = await res.json();
-    quizBank = data.questions || [];
-  } catch(e) {
-    console.error('Không thể tải ngân hàng câu hỏi quizz.json', e);
-  }
-}
-loadQuizData();
-
-function startQuizSession(isWinner) {
-  if (quizBank.length === 0) {
-    // Nếu chưa tải kịp, hoàn tất luôn không qua quiz
-    finalizeMatchScore(isWinner, false);
-    return;
-  }
-  quizSessionActive = true;
-  consecutiveCorrect = 0;
-  quizCompleted = false;
-  usedQuestionIds.clear();
-
-  const w = turn ^ 1;
-  const activeQuizTitle = seat >= 0
-    ? (isWinner ? '🏆 Thưởng cho Người Thắng (3 câu đúng = x1.5 điểm)' : '🛡️ Cứu trợ Người Thua (3 câu đúng = giảm phạt còn 0.5đ)')
-    : `🏆 Quiz cho ${names[w]} (3 câu đúng = x1.5 điểm thắng)`;
-
-  $('quiz-modal').hidden = false;
-  $('q-mode-title').textContent = activeQuizTitle;
-  showNextQuizQuestion();
-}
-
-function showNextQuizQuestion() {
-  if (consecutiveCorrect >= 3 || quizCompleted) return;
-
-  // Lọc câu hỏi chưa dùng
-  const available = quizBank.filter(q => !usedQuestionIds.has(q.id));
-  if (available.length === 0) {
-    usedQuestionIds.clear();
-    available.push(...quizBank);
-  }
-
-  const q = available[Math.floor(Math.random() * available.length)];
-  usedQuestionIds.add(q.id);
-
-  // Xáo trộn đáp án mà vẫn giữ đúng đáp án chính xác
-  const originalOptions = q.options.map((opt, idx) => ({ text: opt, isCorrect: idx === q.answer }));
-  // Shuffle options
-  for (let i = originalOptions.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [originalOptions[i], originalOptions[j]] = [originalOptions[j], originalOptions[i]];
-  }
-
-  const newCorrectIndex = originalOptions.findIndex(o => o.isCorrect);
-  currentQuestion = {
-    id: q.id,
-    question: q.question,
-    options: originalOptions.map(o => o.text),
-    answer: newCorrectIndex
-  };
-
-  $('q-prog').textContent = `${consecutiveCorrect}/3`;
-  $('q-text').textContent = currentQuestion.question;
-  $('q-fb').textContent = '';
-
-  const optContainer = $('q-options');
-  optContainer.innerHTML = '';
-  currentQuestion.options.forEach((optText, idx) => {
-    const btn = document.createElement('button');
-    btn.className = 'quiz-option';
-    btn.textContent = `${String.fromCharCode(65 + idx)}. ${optText}`;
-    btn.onclick = () => handleQuizAnswer(idx, btn);
-    optContainer.appendChild(btn);
   });
 }
 
-function handleQuizAnswer(selectedIndex, btnElement) {
-  if (quizCompleted || !currentQuestion) return;
-
-  const allBtns = document.querySelectorAll('.quiz-option');
-  allBtns.forEach(b => b.disabled = true);
-
-  const isCorrect = selectedIndex === currentQuestion.answer;
-  if (isCorrect) {
-    btnElement.classList.add('correct');
-    consecutiveCorrect++;
-    snd('chime');
-    $('q-fb').textContent = 'Chính xác! 🎉';
-  } else {
-    btnElement.classList.add('incorrect');
-    allBtns[currentQuestion.answer].classList.add('correct');
-    consecutiveCorrect = 0;
-    snd('bad');
-    $('q-fb').textContent = 'Rất tiếc, chưa chính xác. Chuỗi đúng đã về 0! ❌';
-  }
-
-  $('q-prog').textContent = `${consecutiveCorrect}/3`;
-
-  setTimeout(() => {
-    if (consecutiveCorrect >= 3) {
-      quizCompleted = true;
-      $('q-fb').textContent = '✨ Hoàn thành xuất sắc 3 câu liên tiếp!';
-      setTimeout(() => {
-        $('quiz-modal').hidden = true;
-        quizSessionActive = false;
-        finalizeMatchScore(turn ^ 1 === (seat >= 0 ? seat : (turn ^ 1)), true);
-      }, 1200);
-    } else {
-      // Chờ 1.2s rồi qua câu tiếp theo hoặc kết thúc nếu sai
-      setTimeout(() => {
-        if (!isCorrect) {
-          // Sai chuỗi -> kết thúc quiz session với kết quả không đạt chuỗi
-          quizCompleted = true;
-          $('quiz-modal').hidden = true;
-          quizSessionActive = false;
-          finalizeMatchScore(turn ^ 1 === (seat >= 0 ? seat : (turn ^ 1)), false);
-        } else {
-          showNextQuizQuestion();
-        }
-      }, 1000);
-    }
-  }, 1000);
+function cleanupRoomRefs(room) {
+  if (!room) return;
+  clearWheelTimers(room);
+  clearDisconnectTimers(room);
+  if (rooms[room.p1] === room) delete rooms[room.p1];
+  if (rooms[room.p2] === room) delete rooms[room.p2];
+  if (pidToRoom.get(room.p1Pid) === room.id) pidToRoom.delete(room.p1Pid);
+  if (pidToRoom.get(room.p2Pid) === room.id) pidToRoom.delete(room.p2Pid);
+  roomsById.delete(room.id);
 }
 
-// ============================================================================
-// MODULE 4: UNIFIED MATCH SCORE & PROGRESSION INTEGRATION
-// ============================================================================
-let scoreFinalized = false;
+function buildGuessCandidates(spinnerPid) {
+  const spinnerRec = recByPid(spinnerPid);
+  if (!spinnerRec) return [];
 
-function processSinglePlayerMatchOutcome(slotIdx, didWin, quizStreakAchieved, opponentName, matchId) {
-  const p = PlayerProfileManager.getProfile(slotIdx);
-  const scoreBefore = p.totalScore;
-  const eloBefore = p.elo;
-  const usedBuffs = [];
+  const candidates = [{
+    id: spinnerRec.pub,
+    name: spinnerRec.name,
+    elo: spinnerRec.elo,
+    isBot: false
+  }];
+  const usedIds = new Set([spinnerRec.pub]);
 
-  let deltaScore = 0;
-  let deltaElo = 0;
-  let multDouble = 1;
-  let multKing = 1;
-  let multQuiz = 1;
+  const otherReals = [...ratings.entries()]
+    .filter(([pid, r]) => pid !== spinnerPid && r && !usedIds.has(r.pub))
+    .map(([, r]) => r)
+    .sort(() => Math.random() - 0.5);
 
-  if (didWin) {
-    if (PlayerProfileManager.consumeOneBuff(slotIdx, 'DOUBLE_SCORE', matchId)) {
-      multDouble = 2;
-      usedBuffs.push('⚡ Double Score (2x)');
-    }
-    if (PlayerProfileManager.consumeOneBuff(slotIdx, 'KING_AURA', matchId)) {
-      multKing = 1.5;
-      usedBuffs.push('👑 King Aura (1.5x)');
-    }
-    if (quizStreakAchieved) {
-      multQuiz = 1.5;
-    }
-    deltaScore = baseGameScore * multDouble * multKing * multQuiz;
-    deltaElo = 16;
+  for (const r of otherReals) {
+    if (candidates.length >= 3) break;
+    usedIds.add(r.pub);
+    candidates.push({
+      id: r.pub,
+      name: r.name,
+      elo: r.elo,
+      isBot: false
+    });
+  }
 
-    p.totalWins += 1;
-    p.currentStreak += 1;
-    if (p.currentStreak > p.bestStreak) p.bestStreak = p.currentStreak;
+  let botIdx = 0;
+  const shuffledBots = [...VIRTUAL_BOT_NAMES].sort(() => Math.random() - 0.5);
+  while (candidates.length < 3) {
+    const botId = 'bot_' + crypto.randomBytes(4).toString('hex');
+    const offset = Math.round((Math.random() - 0.45) * 260);
+    const botElo = Math.max(200, Math.round(spinnerRec.elo + offset));
+    const botName = shuffledBots[botIdx % shuffledBots.length] + '_' + (10 + Math.floor(Math.random() * 89));
+    botIdx++;
+    candidates.push({
+      id: botId,
+      name: botName,
+      elo: botElo,
+      isBot: true
+    });
+  }
+
+  return candidates.sort(() => Math.random() - 0.5);
+}
+
+function triggerLuckyWheel(room, spinnerRole, milestone) {
+  if (!room || room.finished || room.paused) return;
+  if (room.triggeredMilestones.has(milestone)) return;
+
+  const spinnerRec = getRoomRec(room, spinnerRole);
+  if (!spinnerRec) return;
+
+  room.triggeredMilestones.add(milestone);
+  room.paused = true;
+
+  const targetIndex = Math.floor(Math.random() * WHEEL_SEGMENTS.length);
+  const selectedSeg = WHEEL_SEGMENTS[targetIndex];
+  const rewardType = selectedSeg.type;
+  const eventId = 'lw_' + crypto.randomBytes(8).toString('hex');
+
+  let candidates = null;
+  let publicCandidates = null;
+  if (rewardType === 'guess_swap') {
+    const spinnerPid = spinnerRole === 0 ? room.p1Pid : room.p2Pid;
+    candidates = buildGuessCandidates(spinnerPid);
+    publicCandidates = candidates.map((c) => ({
+      id: c.id,
+      name: c.name,
+      isBot: c.isBot
+    }));
+  }
+
+  const startedAt = Date.now();
+  const wheelState = {
+    eventId,
+    matchId: room.id,
+    spinnerRole,
+    spinnerName: spinnerRec.name,
+    milestone,
+    targetIndex,
+    rewardType,
+    candidates,
+    publicCandidates,
+    startedAt,
+    spinDurationMs: WHEEL_SPIN_DURATION_MS,
+    guessTimeoutMs: rewardType === 'guess_swap' ? GUESS_TIMEOUT : 0,
+    guessDeadlineAt: rewardType === 'guess_swap' ? startedAt + WHEEL_SPIN_DURATION_MS + GUESS_TIMEOUT : 0,
+    guessSubmitted: false,
+    chosenId: null,
+    processed: false,
+    resultPayload: null,
+    resolveTimer: null,
+    completeTimer: null
+  };
+
+  room.activeWheel = wheelState;
+
+  io.to(room.id).emit('lucky_wheel_start', {
+    matchId: room.id,
+    eventId,
+    spinnerRole,
+    spinnerName: spinnerRec.name,
+    milestone,
+    segments: WHEEL_SEGMENTS,
+    targetIndex,
+    rewardType,
+    candidates: publicCandidates,
+    startedAt,
+    spinDurationMs: WHEEL_SPIN_DURATION_MS,
+    guessTimeoutMs: wheelState.guessTimeoutMs
+  });
+
+  if (rewardType === 'guess_swap') {
+    wheelState.resolveTimer = setTimeout(() => {
+      if (!room.activeWheel || room.activeWheel.eventId !== eventId || room.activeWheel.processed) return;
+      const randomPick = candidates[Math.floor(Math.random() * candidates.length)];
+      resolveLuckyWheel(room, eventId, randomPick ? randomPick.id : null, true);
+    }, WHEEL_SPIN_DURATION_MS + GUESS_TIMEOUT);
   } else {
-    const shieldUsed = PlayerProfileManager.consume
-  
+    wheelState.resolveTimer = setTimeout(() => {
+      resolveLuckyWheel(room, eventId, null, false);
+    }, WHEEL_SPIN_DURATION_MS);
+  }
+}
+
+function resolveLuckyWheel(room, eventId, chosenId, timedOut) {
+  if (!room || room.finished || !room.activeWheel) return;
+  const wheel = room.activeWheel;
+  if (wheel.eventId !== eventId || wheel.processed) return;
+
+  wheel.processed = true;
+  if (wheel.resolveTimer) {
+    clearTimeout(wheel.resolveTimer);
+    wheel.resolveTimer = null;
+  }
+
+  const spinnerRole = wheel.spinnerRole;
+  const oppRole = spinnerRole ^ 1;
+  const spinnerRec = getRoomRec(room, spinnerRole);
+  const oppRec = getRoomRec(room, oppRole);
+  if (!spinnerRec || !oppRec) {
+    finishLuckyWheel(room, eventId);
+    return;
+  }
+
+  let stolenAmount = 0;
+  let swapped = false;
+  let eloDeltas = [0, 0];
+  let guessResult = null;
+  let summaryText = '';
+
+  if (wheel.rewardType === 'x2') {
+    room.buffs[spinnerRole].x2 = true;
+    summaryText = `${spinnerRec.name} nhận buff x2 ELO cho phần thưởng dương cuối trận!`;
+  } else if (wheel.rewardType === 'steal') {
+    const rawStolen = Math.max(1, Math.round(oppRec.elo * 0.05));
+    stolenAmount = Math.min(rawStolen, oppRec.elo);
+    if (stolenAmount > 0) {
+      oppRec.elo = roundElo(oppRec.elo - stolenAmount);
+      spinnerRec.elo = roundElo(spinnerRec.elo + stolenAmount);
+      room.eloLedger[spinnerRole].stolen = Number((room.eloLedger[spinnerRole].stolen + stolenAmount).toFixed(1));
+      room.eloLedger[oppRole].stolen = Number((room.eloLedger[oppRole].stolen - stolenAmount).toFixed(1));
+      eloDeltas[spinnerRole] = stolenAmount;
+      eloDeltas[oppRole] = -stolenAmount;
+      syncProfilesAndLeaderboard(room);
+    }
+    summaryText = `${spinnerRec.name} cướp thành công ${stolenAmount} ELO từ ${oppRec.name}!`;
+  } else if (wheel.rewardType === 'guess_swap') {
+    const cands = wheel.candidates || [];
+    const maxElo = cands.length ? Math.max(...cands.map((c) => c.elo)) : 0;
+    const chosen = cands.find((c) => c.id === chosenId) || cands[0] || null;
+    const isCorrect = !!chosen && chosen.elo === maxElo;
+
+    if (isCorrect && !oppRec.isBot) {
+      const oldSpinnerElo = spinnerRec.elo;
+      const oldOppElo = oppRec.elo;
+      spinnerRec.elo = oldOppElo;
+      oppRec.elo = oldSpinnerElo;
+      const sDelta = Number((oldOppElo - oldSpinnerElo).toFixed(1));
+      const oDelta = Number((oldSpinnerElo - oldOppElo).toFixed(1));
+      room.eloLedger[spinnerRole].swap = Number((room.eloLedger[spinnerRole].swap + sDelta).toFixed(1));
+      room.eloLedger[oppRole].swap = Number((room.eloLedger[oppRole].swap + oDelta).toFixed(1));
+      eloDeltas[spinnerRole] = sDelta;
+      eloDeltas[oppRole] = oDelta;
+      swapped = true;
+      syncProfilesAndLeaderboard(room);
+      summaryText = `${spinnerRec.name} đoán ĐÚNG người có Elo cao nhất và HOÁN ĐỔI Elo với ${oppRec.name}!`;
+    } else {
+      summaryText = `${spinnerRec.name} đoán SAI — không có hoán đổi Elo nào xảy ra.`;
+    }
+
+    guessResult = {
+      chosenId: chosen ? chosen.id : null,
+      chosenName: chosen ? chosen.name : '',
+      timedOut: !!timedOut,
+      isCorrect,
+      maxElo,
+      candidates: cands.map((c) => ({
+        id: c.id,
+        name: c.name,
+        elo: c.elo,
+        isBot: c.isBot,
+        isHighest: c.elo === maxElo
+      }))
+    };
+  }
+
+  const r1 = getRoomRec(room, 0);
+  const r2 = getRoomRec(room, 1);
+  const resumeInMs = wheel.rewardType === 'guess_swap' ? WHEEL_GUESS_RESULT_HOLD_MS : WHEEL_RESULT_HOLD_MS;
+
+  const resultPayload = {
+    matchId: room.id,
+    eventId,
+    spinnerRole,
+    spinnerName: spinnerRec.name,
+    rewardType: wheel.rewardType,
+    stolenAmount,
+    swapped,
+    eloDeltas,
+    buffs: {
+      0: { ...room.buffs[0] },
+      1: { ...room.buffs[1] }
+    },
+    elo: [r1 ? r1.elo : START_ELO, r2 ? r2.elo : START_ELO],
+    guessResult,
+    summaryText,
+    resumeInMs
+  };
+
+  wheel.resultPayload = resultPayload;
+  io.to(room.id).emit('lucky_wheel_result', resultPayload);
+
+  wheel.completeTimer = setTimeout(() => {
+    finishLuckyWheel(room, eventId);
+  }, resumeInMs);
+}
+
+function finishLuckyWheel(room, eventId) {
+  if (!room || !room.activeWheel || room.activeWheel.eventId !== eventId) return;
+  clearWheelTimers(room);
+  room.activeWheel = null;
+  room.paused = false;
+
+  const r1 = getRoomRec(room, 0);
+  const r2 = getRoomRec(room, 1);
+  io.to(room.id).emit('lucky_wheel_complete', {
+    matchId: room.id,
+    eventId,
+    paused: false,
+    elo: [r1 ? r1.elo : START_ELO, r2 ? r2.elo : START_ELO],
+    buffs: {
+      0: { ...room.buffs[0] },
+      1: { ...room.buffs[1] }
+    }
+  });
+}
+
+function syncProfilesAndLeaderboard(room) {
+  [0, 1].forEach((r) => {
+    const s = getRoomSocket(room, r);
+    const rec = getRoomRec(room, r);
+    if (s && rec) s.emit('profile', profileOf(rec));
+  });
+  broadcastLeaderboard();
+}
+
+function startQuizSession(room, role, resultType, baseGain, baseLoss) {
+  const socketId = role === 0 ? room.p1 : room.p2;
+  const pid = role === 0 ? room.p1Pid : room.p2Pid;
+  const playerRec = recByPid(pid);
+  if (!playerRec) return;
+
+  const hasX2 = !!(room.buffs && room.buffs[role] && room.buffs[role].x2);
+  const eloBefore = room.eloBefore[role];
+  const midMatchSteal = room.eloLedger[role].stolen;
+  const midMatchSwap = room.eloLedger[role].swap;
+
+  const socket = io.sockets.sockets.get(socketId);
+  if (!socket || !socket.connected) {
+    // Player disconnected before quiz: settle base Elo immediately
+    if (resultType === 'win') {
+      const x2Bonus = hasX2 ? baseGain : 0;
+      playerRec.elo = roundElo(playerRec.elo + baseGain + x2Bonus);
+      playerRec.wins++;
+      playerRec.games++;
+    } else {
+      playerRec.elo = roundElo(playerRec.elo - baseLoss);
+      playerRec.games++;
+    }
+    broadcastLeaderboard();
+    return;
+  }
+
+  const shuffled = [...questionsBank].sort(() => 0.5 - Math.random());
+  const selected = shuffled.slice(0, 3).map((q) => ({
+    id: q.id,
+    question: q.question,
+    options: q.options
+  }));
+  const sessionId = crypto.randomBytes(16).toString('hex');
+
+  quizSessions[sessionId] = {
+    socketId,
+    pid,
+    role,
+    questions: selected,
+    answeredIndices: new Set(),
+    currentIndex: 0,
+    correctCount: 0,
+    resultType,
+    baseGain,
+    baseLoss,
+    hasX2,
+    eloBefore,
+    midMatchSteal,
+    midMatchSwap,
+    completed: false
+  };
+
+  socket.emit('quiz_start', {
+    sessionId,
+    resultType,
+    total: 3,
+    hasX2,
+    currentQuestion: { index: 1, ...selected[0] }
+  });
+}
+
+function finishRoom(room, winnerRole, reason = 'nomoves') {
+  if (!room || room.finished) return;
+  room.finished = true;
+  room.paused = false;
+  clearWheelTimers(room);
+  clearDisconnectTimers(room);
+
+  const W = getRoomRec(room, winnerRole);
+  const L = getRoomRec(room, winnerRole ^ 1);
+
+  io.to(room.id).emit('match_ended', { winner: winnerRole, reason });
+
+  if (W && L) {
+    const expected = 1 / (1 + Math.pow(10, (L.elo - W.elo) / 400));
+    const baseGain = Math.max(1, Math.round(K_FACTOR * (1 - expected)));
+    const newL = Math.max(0, L.elo - baseGain);
+    const baseLoss = Number((L.elo - newL).toFixed(1));
+
+    startQuizSession(room, winnerRole, 'win', baseGain, baseLoss);
+    startQuizSession(room, winnerRole ^ 1, 'loss', baseGain, baseLoss);
+  }
+
+  // Clean room lookup maps once finished
+  if (pidToRoom.get(room.p1Pid) === room.id) pidToRoom.delete(room.p1Pid);
+  if (pidToRoom.get(room.p2Pid) === room.id) pidToRoom.delete(room.p2Pid);
+  roomsById.delete(room.id);
+}
+
+function leaveRoom(socket, immediate = true) {
+  const room = rooms[socket.id];
+  if (!room) return;
+  const role = getRoomRole(room, socket.id);
+  if (role < 0) return;
+
+  if (immediate || room.finished) {
+    if (!room.finished) {
+      socket.to(room.id).emit('opponent_left');
+      finishRoom(room, role ^ 1, 'forfeit');
+    }
+    delete rooms[room.p1];
+    delete rooms[room.p2];
+    socket.leave(room.id);
+    return;
+  }
+
+  // Disconnect grace window so player can reconnect without losing state
+  room.disconnected[role] = true;
+  if (room.disconnectTimers[role]) clearTimeout(room.disconnectTimers[role]);
+  room.disconnectTimers[role] = setTimeout(() => {
+    if (!room || room.finished || !room.disconnected[role]) return;
+    const oppSock = getRoomSocket(room, role ^ 1);
+    if (oppSock) oppSock.emit('opponent_left');
+    finishRoom(room, role ^ 1, 'forfeit');
+    cleanupRoomRefs(room);
+  }, RECONNECT_GRACE_MS);
+}
+
+function tryReconnectPlayer(socket, pid) {
+  const roomId = pidToRoom.get(pid);
+  if (!roomId) return false;
+  const room = roomsById.get(roomId);
+  if (!room || room.finished) {
+    pidToRoom.delete(pid);
+    return false;
+  }
+
+  const role = room.p1Pid === pid ? 0 : (room.p2Pid === pid ? 1 : -1);
+  if (role < 0) return false;
+
+  const oldSocketId = role === 0 ? room.p1 : room.p2;
+  if (oldSocketId && rooms[oldSocketId] === room) delete rooms[oldSocketId];
+
+  if (role === 0) room.p1 = socket.id;
+  else room.p2 = socket.id;
+
+  rooms[socket.id] = room;
+  room.disconnected[role] = false;
+  if (room.disconnectTimers[role]) {
+    clearTimeout(room.disconnectTimers[role]);
+    room.disconnectTimers[role] = null;
+  }
+
+  socket.join(room.id);
+
+  const r1 = getRoomRec(room, 0);
+  const r2 = getRoomRec(room, 1);
+
+  let wheelSync = null;
+  if (room.activeWheel) {
+    const w = room.activeWheel;
+    wheelSync = {
+      matchId: room.id,
+      eventId: w.eventId,
+      spinnerRole: w.spinnerRole,
+      spinnerName: w.spinnerName,
+      milestone: w.milestone,
+      segments: WHEEL_SEGMENTS,
+      targetIndex: w.targetIndex,
+      rewardType: w.rewardType,
+      candidates: w.publicCandidates,
+      startedAt: w.startedAt,
+      spinDurationMs: w.spinDurationMs,
+      guessTimeoutMs: w.guessTimeoutMs,
+      guessRemainingMs: w.guessDeadlineAt ? Math.max(0, w.guessDeadlineAt - Date.now()) : 0,
+      guessSubmitted: w.guessSubmitted,
+      processed: w.processed,
+      resultPayload: w.resultPayload
+    };
+  }
+
+  socket.emit('match_sync', {
+    roomId: room.id,
+    role,
+    spots: room.initialSpots,
+    turn: room.currentTurn,
+    tm: room.tm,
+    p1Name: r1 ? r1.name : room.p1Name,
+    p2Name: r2 ? r2.name : room.p2Name,
+    elo: [r1 ? r1.elo : START_ELO, r2 ? r2.elo : START_ELO],
+    moveCount: room.moveCount,
+    paused: room.paused,
+    buffs: { 0: { ...room.buffs[0] }, 1: { ...room.buffs[1] } },
+    lastStatePacket: room.lastStatePacket,
+    activeWheel: wheelSync
+  });
+
+  return true;
+}
+
+io.on('connection', (socket) => {
+  socket.emit('leaderboard_update', getLeaderboard());
+
+  socket.on('set_name', (data) => {
+    const rec = identify(socket, data);
+    socket.emit('profile', profileOf(rec));
+    broadcastLeaderboard();
+
+    const u = users[socket.id];
+    if (u && u.pid) {
+      tryReconnectPlayer(socket, u.pid);
+    }
+  });
+
+  socket.on('find_match', (data) => {
+    const rec = identify(socket, data);
+    socket.emit('profile', profileOf(rec));
+
+    const u = users[socket.id];
+    if (u && tryReconnectPlayer(socket, u.pid)) return;
+
+    let nodeCount = 3;
+    if (data && ALLOWED_NODE_COUNTS.includes(Number(data.nodes))) {
+      nodeCount = Number(data.nodes);
+    }
+
+    if (waitingPlayer && waitingPlayer.id === socket.id) return;
+    if (waitingPlayer && !waitingPlayer.connected) waitingPlayer = null;
+
+    if (waitingPlayer) {
+      const p1 = waitingPlayer, p2 = socket;
+      waitingPlayer = null;
+      const roomId = 'room_' + p1.id + '_' + p2.id;
+      p1.join(roomId); p2.join(roomId);
+
+      const p1Pid = users[p1.id] ? users[p1.id].pid : 'anon_' + p1.id;
+      const p2Pid = users[p2.id] ? users[p2.id].pid : 'anon_' + p2.id;
+      const r1 = recOf(p1.id), r2 = recOf(p2.id);
+      const initialSpots = generateSpots(nodeCount);
+      const firstTurn = Math.random() < 0.5 ? 0 : 1;
+
+      const room = {
+        id: roomId,
+        p1: p1.id,
+        p2: p2.id,
+        p1Pid,
+        p2Pid,
+        p1Name: r1.name,
+        p2Name: r2.name,
+        tm: MATCH_MINUTES,
+        initialSpots,
+        currentTurn: firstTurn,
+        moveCount: 0,
+        lastSpotsCount: initialSpots.length,
+        lastLinesCount: 0,
+        lastStatePacket: null,
+        paused: false,
+        finished: false,
+        triggeredMilestones: new Set(),
+        activeWheel: null,
+        buffs: { 0: { x2: false }, 1: { x2: false } },
+        eloBefore: [r1.elo, r2.elo],
+        eloLedger: { 0: { stolen: 0, swap: 0 }, 1: { stolen: 0, swap: 0 } },
+        disconnected: { 0: false, 1: false },
+        disconnectTimers: { 0: null, 1: null }
+      };
+
+      rooms[p1.id] = room;
+      rooms[p2.id] = room;
+      roomsById.set(roomId, room);
+      pidToRoom.set(p1Pid, roomId);
+      pidToRoom.set(p2Pid, roomId);
+
+      const matchData = {
+        roomId,
+        spots: initialSpots,
+        turn: firstTurn,
+        tm: MATCH_MINUTES,
+        p1Name: r1.name,
+        p2Name: r2.name,
+        elo: [r1.elo, r2.elo]
+      };
+      p1.emit('match_start', { ...matchData, role: 0 });
+      p2.emit('match_start', { ...matchData, role: 1 });
+    } else {
+      waitingPlayer = socket;
+      socket.emit('waiting_for_match');
+    }
+  });
+
+  socket.on('cancel_match', () => {
+    if (waitingPlayer && waitingPlayer.id === socket.id) waitingPlayer = null;
+  });
+
+  socket.on('leave_match', () => leaveRoom(socket, true));
+
+  socket.on('game_action', (msg) => {
+    const room = rooms[socket.id];
+    if (!room || !msg || typeof msg !== 'object') return;
+    if (room.finished) return;
+
+    const senderRole = getRoomRole(room, socket.id);
+    if (senderRole < 0) return;
+
+    // Block gameplay & resign actions while Lucky Wheel is active
+    if (room.paused) {
+      socket.emit('lucky_wheel_error', { message: 'Vòng quay may mắn đang diễn ra, tạm khóa thao tác.' });
+      return;
+    }
+
+    if (msg.t === 'resign') {
+      socket.to(room.id).emit('game_action', { t: 'resign', i: senderRole });
+      finishRoom(room, senderRole ^ 1, 'resign');
+      return;
+    }
+
+    if (msg.t === 'state' && typeof msg.s === 'string') {
+      let parsed = null;
+      try {
+        parsed = JSON.parse(msg.s);
+      } catch (e) {
+        return;
+      }
+      if (!parsed || !Array.isArray(parsed.spots) || !Array.isArray(parsed.lines)) return;
+
+      // Validate turn and genuine Sprouts commit (1 new spot, 2 new edges)
+      if (!msg.lot) {
+        if (senderRole !== room.currentTurn) return;
+        const isValidNewCommit =
+          parsed.spots.length === room.lastSpotsCount + 1 &&
+          parsed.lines.length === room.lastLinesCount + 2;
+
+        if (!isValidNewCommit) {
+          // Ignore duplicate or malformed state packets
+          return;
+        }
+
+        room.lastSpotsCount = parsed.spots.length;
+        room.lastLinesCount = parsed.lines.length;
+        room.moveCount += 1;
+        room.currentTurn = senderRole ^ 1;
+        room.lastStatePacket = msg.s;
+
+        socket.to(room.id).emit('game_action', msg);
+
+        if (!parsed.over && room.moveCount % WHEEL_MILESTONE_STEP === 0 && !room.triggeredMilestones.has(room.moveCount)) {
+          triggerLuckyWheel(room, senderRole, room.moveCount);
+        }
+        return;
+      }
+    }
+
+    socket.to(room.id).emit('game_action', msg);
+  });
+
+  socket.on('lucky_wheel_guess', (data) => {
+    const room = rooms[socket.id];
+    if (!room || room.finished || !room.activeWheel) {
+      socket.emit('lucky_wheel_error', { message: 'Không có sự kiện vòng quay đang hoạt động.' });
+      return;
+    }
+    const senderRole = getRoomRole(room, socket.id);
+    const wheel = room.activeWheel;
+
+    if (!data || typeof data !== 'object' || data.eventId !== wheel.eventId) {
+      socket.emit('lucky_wheel_error', { message: 'Mã sự kiện vòng quay không hợp lệ.' });
+      return;
+    }
+    if (senderRole !== wheel.spinnerRole) {
+      socket.emit('lucky_wheel_error', { message: 'Chỉ người quay mới được chọn ứng viên.' });
+      return;
+    }
+    if (wheel.rewardType !== 'guess_swap') {
+      socket.emit('lucky_wheel_error', { message: 'Phần thưởng hiện tại không yêu cầu dự đoán.' });
+      return;
+    }
+    if (wheel.processed || wheel.guessSubmitted) {
+      socket.emit('lucky_wheel_error', { message: 'Lựa chọn đã được ghi nhận trước đó.' });
+      return;
+    }
+    if (wheel.guessDeadlineAt && Date.now() > wheel.guessDeadlineAt + 500) {
+      socket.emit('lucky_wheel_error', { message: 'Đã hết thời gian lựa chọn.' });
+      return;
+    }
+
+    const candidateId = String(data.candidateId || '');
+    const validCandidate = (wheel.candidates || []).some((c) => c.id === candidateId);
+    if (!validCandidate) {
+      socket.emit('lucky_wheel_error', { message: 'Ứng viên không nằm trong danh sách hợp lệ.' });
+      return;
+    }
+
+    wheel.guessSubmitted = true;
+    wheel.chosenId = candidateId;
+    resolveLuckyWheel(room, wheel.eventId, candidateId, false);
+  });
+
+  socket.on('game_over', (data) => {
+    const room = rooms[socket.id];
+    if (!room || room.finished || room.paused || !data) return;
+    const winner = data.winner === 0 || data.winner === 1 ? data.winner : null;
+    if (winner !== null) {
+      const reason = ['nomoves', 'timeout', 'resign', 'forfeit'].includes(data.reason) ? data.reason : 'nomoves';
+      finishRoom(room, winner, reason);
+    }
+  });
+
+  socket.on('submit_quiz_answer', (data) => {
+    if (!data || !data.sessionId || !data.selectedAnswer) return;
+    const session = quizSessions[data.sessionId];
+    if (!session || session.completed || session.socketId !== socket.id) return;
+
+    const qIdx = session.currentIndex;
+    if (qIdx >= 3 || session.answeredIndices.has(qIdx)) return;
+    session.answeredIndices.add(qIdx);
+
+    const currentQData = session.questions[qIdx];
+    const originalQ = questionsBank.find((q) => q.id === currentQData.id);
+
+    const userAns = String(data.selectedAnswer).trim().toUpperCase();
+    if (!['A', 'B', 'C', 'D'].includes(userAns)) {
+      session.answeredIndices.delete(qIdx);
+      return;
+    }
+
+    const correctAns = originalQ ? String(originalQ.correctAnswer).trim().toUpperCase() : 'B';
+    const correctText = (originalQ && originalQ.options && originalQ.options[correctAns]) ? originalQ.options[correctAns] : '';
+    const isCorrect = userAns === correctAns;
+
+    if (isCorrect) session.correctCount++;
+    session.currentIndex++;
+
+    const rawExp = originalQ && typeof originalQ.explanation === 'string' ? originalQ.explanation.trim() : '';
+    const explanation = rawExp || (isCorrect
+      ? `Chính xác! Đáp án đúng là ${correctAns}: "${correctText}".`
+      : `Chưa chính xác. Đáp án đúng là ${correctAns}: "${correctText}".`);
+
+    socket.emit('quiz_answer_feedback', {
+      correct: isCorrect,
+      correctKey: correctAns,
+      correctText,
+      selectedKey: userAns,
+      explanation,
+      correctCount: session.correctCount,
+      answeredIndex: qIdx + 1,
+      total: 3
+    });
+
+    setTimeout(() => {
+      if (!session || session.completed) return;
+      if (session.currentIndex < 3) {
+        const nextQ = session.questions[session.currentIndex];
+        socket.emit('quiz_answer_result', {
+          correct: isCorrect,
+          nextQuestion: { index: session.currentIndex + 1, ...nextQ }
+        });
+      } else {
+        session.completed = true;
+        const playerRec = recByPid(session.pid);
+        if (!playerRec) {
+          delete quizSessions[data.sessionId];
+          return;
+        }
+
+        // Standardized Elo calculation pipeline:
+        // 1. Original match baseGain/baseLoss
+        // 2. Original Quiz bonus/penalty
+        // 3. Apply x2 buff only to eligible positive reward
+        // 4. Mid-match steal & swap already applied in real time; never double-counted
+        let matchResultDelta = 0;
+        let quizBonus = 0;
+        let x2Bonus = 0;
+        let endOfMatchDelta = 0;
+
+        if (session.resultType === 'win') {
+          matchResultDelta = session.baseGain;
+          quizBonus = session.correctCount === 3 ? Math.round(session.baseGain * 1.5) : 0;
+          const positiveReward = matchResultDelta + quizBonus;
+          x2Bonus = session.hasX2 && positiveReward > 0 ? positiveReward : 0;
+          endOfMatchDelta = Number((positiveReward + x2Bonus).toFixed(1));
+          playerRec.elo = roundElo(playerRec.elo + endOfMatchDelta);
+          playerRec.wins++;
+          playerRec.games++;
+        } else {
+          matchResultDelta = -session.baseLoss;
+          if (session.correctCount === 3) {
+            endOfMatchDelta = -0.5;
+            quizBonus = Number((session.baseLoss - 0.5).toFixed(1));
+          } else {
+            endOfMatchDelta = -session.baseLoss;
+            quizBonus = 0;
+          }
+          x2Bonus = 0;
+          playerRec.elo = roundElo(playerRec.elo + endOfMatchDelta);
+          playerRec.games++;
+        }
+
+        const midMatchTotal = Number((session.midMatchSteal + session.midMatchSwap).toFixed(1));
+        const finalEloChange = Number((playerRec.elo - session.eloBefore).toFixed(1));
+
+        socket.emit('quiz_completed', {
+          correctCount: session.correctCount,
+          finalEloDelta: endOfMatchDelta,
+          newElo: playerRec.elo,
+          breakdown: {
+            eloBefore: session.eloBefore,
+            matchResult: matchResultDelta,
+            quizBonus,
+            luckyWheelBonus: x2Bonus,
+            stealDelta: session.midMatchSteal,
+            swapDelta: session.midMatchSwap,
+            stealSwapTotal: midMatchTotal,
+            finalEloChange,
+            eloAfter: playerRec.elo
+          }
+        });
+        socket.emit('profile', profileOf(playerRec));
+        broadcastLeaderboard();
+        delete quizSessions[data.sessionId];
+      }
+    }, 600);
+  });
+
+  socket.on('disconnect', () => {
+    if (waitingPlayer && waitingPlayer.id === socket.id) waitingPlayer = null;
+    leaveRoom(socket, false);
+    delete users[socket.id];
+    broadcastLeaderboard();
+  });
+});
+
+server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
