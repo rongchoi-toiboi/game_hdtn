@@ -13,20 +13,72 @@ const MATCH_MINUTES = 5;
 const PID_RE = /^[A-Za-z0-9_-]{8,64}$/;
 
 // Lucky Wheel & Reconnect constants
-const WHEEL_MATCH_STEP = 3; // Kích hoạt sau mỗi 3 trận hoàn thành
-const WHEEL_SPIN_DURATION_MS = 3600;
+const WHEEL_MATCH_STEP = 3; // Kích hoạt Vòng quay may mắn sau mỗi 3 trận hoàn thành
+const WHEEL_SPIN_DURATION_MS = 3400;
 const GUESS_TIMEOUT = 10000;
-const WHEEL_RESULT_HOLD_MS = 2400;
+const WHEEL_RESULT_HOLD_MS = 2300;
 const WHEEL_GUESS_RESULT_HOLD_MS = 3200;
 const RECONNECT_GRACE_MS = 12000;
 
+// Cấu hình thông số Item & Quiz
+const QUIZ_WIN_MULTIPLIER = 2.5; // Hệ số X khi trả lời đúng 3/3 lúc thắng (x2.5 baseGain)
+const BET_MULTIPLIER = 2.0;      // Hệ số X khi dùng item Đặt cược Elo (thắng x2, thua -x2)
+const ITEM_ADD_SPOT_CONNECTIONS = 2; // Số kết nối sẵn có X của nút mới thêm (max bậc 3 => còn 1 lượt nối)
+const ITEM_CUT_EDGES_COUNT = 1;       // Số nước đi (cặp đường nối) bị xóa ngẫu nhiên
+
+const ITEM_CATALOG = {
+  shield: {
+    id: 'shield',
+    icon: '🛡️',
+    name: 'Khiên Elo',
+    desc: 'Không bị trừ Elo nếu thua trận này.'
+  },
+  bet: {
+    id: 'bet',
+    icon: '🎲',
+    name: `Cược Elo x${BET_MULTIPLIER}`,
+    desc: `Dùng ở đầu trận: Thắng x${BET_MULTIPLIER} Elo nhận, thua -x${BET_MULTIPLIER} Elo mất.`
+  },
+  add_spot: {
+    id: 'add_spot',
+    icon: '➕',
+    name: `Thêm 1 Nút (${ITEM_ADD_SPOT_CONNECTIONS} kết nối)`,
+    desc: `Tạo thêm 1 điểm nối mới có sẵn ${ITEM_ADD_SPOT_CONNECTIONS} kết nối trên bàn.`
+  },
+  cut_edges: {
+    id: 'cut_edges',
+    icon: '✂️',
+    name: 'Cắt Đường Ngẫu Nhiên',
+    desc: 'Xóa ngẫu nhiên 1 cặp đường nối trên bàn cờ và trả lại kết nối.'
+  },
+  risk_wheel: {
+    id: 'risk_wheel',
+    icon: '🎰',
+    name: 'Vòng Quay May Rủi',
+    desc: 'Quay ngay trong trận: +2 lượt liên tiếp, mất lượt, swap 2 nút, thêm nút, cắt đường hoặc +30s.'
+  }
+};
+
+// Các ô của Vòng quay may mắn sau mỗi 3 trận (giữ nguyên các ô cũ + thêm ô nhận Item)
 const WHEEL_SEGMENTS = [
-  { type: 'x2', label: 'x2 ELO', short: 'x2', color: '#f59f00' },
+  { type: 'x2', label: 'x2 ELO', short: 'x2 ELO', color: '#f59f00' },
   { type: 'steal', label: 'Cướp 5% ELO', short: 'STEAL 5%', color: '#e03131' },
-  { type: 'guess_swap', label: 'Đoán Elo · Swap', short: 'SWAP', color: '#7950f2' },
-  { type: 'x2', label: 'x2 ELO', short: 'x2', color: '#f08c00' },
-  { type: 'steal', label: 'Cướp 5% ELO', short: 'STEAL 5%', color: '#c92a2a' },
-  { type: 'guess_swap', label: 'Đoán Elo · Swap', short: 'SWAP', color: '#6741d9' }
+  { type: 'guess_swap', label: 'Đoán Elo · Swap', short: 'SWAP ELO', color: '#7950f2' },
+  { type: 'item_shield', itemId: 'shield', label: '🛡️ Khiên Không Mất Elo', short: '🛡️ KHIÊN', color: '#0ca678' },
+  { type: 'item_bet', itemId: 'bet', label: `🎲 Item Cược Elo x${BET_MULTIPLIER}`, short: `🎲 CƯỢC x${BET_MULTIPLIER}`, color: '#d9480f' },
+  { type: 'item_risk_wheel', itemId: 'risk_wheel', label: '🎰 Vòng Quay May Rủi', short: '🎰 MAY RỦI', color: '#5f3dc4' },
+  { type: 'item_add_spot', itemId: 'add_spot', label: '➕ Item Thêm 1 Điểm Nối', short: '➕ THÊM NÚT', color: '#1c7ed6' },
+  { type: 'item_cut_edges', itemId: 'cut_edges', label: '✂️ Item Cắt Đường Nối', short: '✂️ CẮT DÂY', color: '#c92a2a' }
+];
+
+// Các ô của Item Vòng quay may rủi (xài trực tiếp trong ván đấu)
+const IN_MATCH_RISK_SEGMENTS = [
+  { type: 'double_turn', label: '⚡ Được 2 lượt nối liên tiếp', short: '2 LƯỢT', color: '#16a34a' },
+  { type: 'lose_turn', label: '⏭️ Mất lượt nối hiện tại', short: 'MẤT LƯỢT', color: '#e03131' },
+  { type: 'swap_nodes', label: '🔄 Swap vị trí 2 nút bất kỳ', short: 'SWAP NÚT', color: '#7950f2' },
+  { type: 'spawn_node', label: '➕ Thêm 1 nút mới trên bàn', short: '+1 NÚT', color: '#1c7ed6' },
+  { type: 'cut_random', label: '✂️ Mất ngẫu nhiên 1 cặp đường', short: 'CẮT DÂY', color: '#d9480f' },
+  { type: 'bonus_time', label: '⏳ Cộng thêm 30 giây đồng hồ', short: '+30 GIÂY', color: '#0ca678' }
 ];
 
 const VIRTUAL_BOT_NAMES = [
@@ -82,9 +134,9 @@ try {
 }
 if (questionsBank.length < 3) questionsBank = FALLBACK_QUESTIONS;
 
-// Lưu trữ dữ liệu định danh theo PID (tránh đếm trùng khi F5/reconnect/nhiều tab)
-const ratings = new Map();           // pid -> { pub, name, elo, games, wins, completedMatches, wheelProgress, pendingX2Buff, countedRooms: Set }
-const usernames = new Map();         // lowerName -> pid
+// Lưu trữ người chơi theo PID (tránh trùng lặp khi F5, reconnect hoặc mở nhiều tab)
+const ratings = new Map();
+const usernames = new Map();
 let waitingPlayer = null;
 let rooms = {};                      // socketId -> room
 const roomsById = new Map();         // roomId -> room
@@ -117,6 +169,17 @@ function getSystemStats() {
 
 const broadcastSystemStats = () => io.emit('stats_update', getSystemStats());
 
+function createDefaultInventory() {
+  // Tặng sẵn mỗi loại 1 item cho người chơi mới trải nghiệm ngay, và nhận thêm từ Vòng quay may mắn
+  return {
+    shield: 1,
+    bet: 1,
+    add_spot: 1,
+    cut_edges: 1,
+    risk_wheel: 1
+  };
+}
+
 function identify(socket, data) {
   const d = data && typeof data === 'object' ? data : {};
   let u = users[socket.id];
@@ -134,9 +197,10 @@ function identify(socket, data) {
       elo: START_ELO,
       games: 0,
       wins: 0,
-      completedMatches: 0, // Tổng số trận hoàn thành dùng cho thống kê
-      wheelProgress: 0,    // Tiến trình chu kỳ 3 trận (0 -> 1 -> 2 -> kích hoạt ở 3 và reset về 0)
+      completedMatches: 0,
+      wheelProgress: 0,
       pendingX2Buff: false,
+      inventory: createDefaultInventory(),
       countedRooms: new Set()
     };
     ratings.set(u.pid, rec);
@@ -168,7 +232,9 @@ const profileOf = (rec) => ({
   completedMatches: rec.completedMatches,
   wheelProgress: rec.wheelProgress,
   wheelStep: WHEEL_MATCH_STEP,
-  pendingX2Buff: !!rec.pendingX2Buff
+  pendingX2Buff: !!rec.pendingX2Buff,
+  inventory: { ...(rec.inventory || {}) },
+  itemCatalog: ITEM_CATALOG
 });
 
 function getSocketByPid(pid) {
@@ -298,11 +364,9 @@ function buildGuessCandidates(spinnerPid) {
 
 /**
  * Kích hoạt Vòng quay may mắn sau khi người chơi hoàn thành đủ 3 trận đấu.
- * Chạy riêng cho người chơi đạt mốc 3 trận, sau đó chuyển sang Quiz tổng kết trận.
  */
 function triggerPostMatchLuckyWheel(spinnerPid, opponentPid, matchNumber, onWheelFinished) {
   const spinnerRec = recByPid(spinnerPid);
-  const oppRec = recByPid(opponentPid);
   const spinnerSock = getSocketByPid(spinnerPid);
 
   if (!spinnerRec || !spinnerSock || !spinnerSock.connected) {
@@ -310,7 +374,6 @@ function triggerPostMatchLuckyWheel(spinnerPid, opponentPid, matchNumber, onWhee
     return;
   }
 
-  // Hủy wheel cũ nếu đang kẹt
   const existing = pidToActiveWheel.get(spinnerPid);
   if (existing) {
     clearWheelTimers(existing);
@@ -342,6 +405,7 @@ function triggerPostMatchLuckyWheel(spinnerPid, opponentPid, matchNumber, onWhee
     matchNumber,
     targetIndex,
     rewardType,
+    itemId: selectedSeg.itemId || null,
     candidates,
     publicCandidates,
     startedAt,
@@ -360,6 +424,7 @@ function triggerPostMatchLuckyWheel(spinnerPid, opponentPid, matchNumber, onWhee
   pidToActiveWheel.set(spinnerPid, wheelState);
 
   spinnerSock.emit('lucky_wheel_start', {
+    mode: 'post_match',
     eventId,
     spinnerPid,
     spinnerName: spinnerRec.name,
@@ -468,6 +533,11 @@ function resolvePostMatchLuckyWheel(spinnerPid, eventId, chosenId, timedOut) {
         isHighest: c.elo === maxElo
       }))
     };
+  } else if (wheel.itemId && ITEM_CATALOG[wheel.itemId]) {
+    if (!spinnerRec.inventory) spinnerRec.inventory = createDefaultInventory();
+    spinnerRec.inventory[wheel.itemId] = (spinnerRec.inventory[wheel.itemId] || 0) + 1;
+    const itemMeta = ITEM_CATALOG[wheel.itemId];
+    summaryText = `${spinnerRec.name} nhận được vật phẩm: ${itemMeta.icon} ${itemMeta.name}!`;
   }
 
   const spinnerSock = getSocketByPid(spinnerPid);
@@ -475,14 +545,17 @@ function resolvePostMatchLuckyWheel(spinnerPid, eventId, chosenId, timedOut) {
 
   const resumeInMs = wheel.rewardType === 'guess_swap' ? WHEEL_GUESS_RESULT_HOLD_MS : WHEEL_RESULT_HOLD_MS;
   const resultPayload = {
+    mode: 'post_match',
     eventId,
     spinnerPid,
     spinnerName: spinnerRec.name,
     rewardType: wheel.rewardType,
+    itemId: wheel.itemId || null,
     stolenAmount,
     swapped,
     newElo: spinnerRec.elo,
     pendingX2Buff: !!spinnerRec.pendingX2Buff,
+    inventory: { ...(spinnerRec.inventory || {}) },
     guessResult,
     summaryText,
     resumeInMs
@@ -506,9 +579,11 @@ function finishPostMatchLuckyWheel(spinnerPid, eventId) {
   const spinnerSock = getSocketByPid(spinnerPid);
   if (spinnerSock) {
     spinnerSock.emit('lucky_wheel_complete', {
+      mode: 'post_match',
       eventId,
       newElo: spinnerRec ? spinnerRec.elo : START_ELO,
-      pendingX2Buff: spinnerRec ? !!spinnerRec.pendingX2Buff : false
+      pendingX2Buff: spinnerRec ? !!spinnerRec.pendingX2Buff : false,
+      inventory: spinnerRec ? { ...(spinnerRec.inventory || {}) } : {}
     });
     if (spinnerRec) spinnerSock.emit('profile', profileOf(spinnerRec));
   }
@@ -524,19 +599,24 @@ function startQuizSession(room, role, resultType, baseGain, baseLoss, eloBeforeM
   if (!playerRec) return;
 
   const hasX2 = !!playerRec.pendingX2Buff;
+  const hasShield = !!(room.matchEffects && room.matchEffects[role] && room.matchEffects[role].shield);
+  const hasBet = !!(room.matchEffects && room.matchEffects[role] && room.matchEffects[role].bet);
   const eloBefore = eloBeforeMatch != null ? eloBeforeMatch : room.eloBefore[role];
-  const wheelDelta = Number((playerRec.elo - eloBefore).toFixed(1));
 
   const socket = getRoomSocket(room, role);
   if (!socket || !socket.connected) {
-    // Người chơi đã thoát trước Quiz: tính điểm Elo trận đấu ngay lập tức
     if (resultType === 'win') {
-      const x2Bonus = hasX2 ? baseGain : 0;
-      playerRec.elo = roundElo(playerRec.elo + baseGain + x2Bonus);
+      const betMult = hasBet ? BET_MULTIPLIER : 1;
+      const x2Mult = hasX2 ? 2 : 1;
+      const totalGain = roundElo(baseGain * betMult * x2Mult);
+      playerRec.elo = roundElo(playerRec.elo + totalGain);
       playerRec.wins++;
       playerRec.games++;
     } else {
-      playerRec.elo = roundElo(playerRec.elo - baseLoss);
+      if (!hasShield) {
+        const betMult = hasBet ? BET_MULTIPLIER : 1;
+        playerRec.elo = roundElo(playerRec.elo - roundElo(baseLoss * betMult));
+      }
       playerRec.games++;
     }
     if (hasX2) playerRec.pendingX2Buff = false;
@@ -564,8 +644,9 @@ function startQuizSession(room, role, resultType, baseGain, baseLoss, eloBeforeM
     baseGain,
     baseLoss,
     hasX2,
+    hasShield,
+    hasBet,
     eloBefore,
-    wheelDelta,
     completed: false
   };
 
@@ -574,15 +655,14 @@ function startQuizSession(room, role, resultType, baseGain, baseLoss, eloBeforeM
     resultType,
     total: 3,
     hasX2,
+    hasShield,
+    hasBet,
+    winMultiplier: QUIZ_WIN_MULTIPLIER,
+    betMultiplier: BET_MULTIPLIER,
     currentQuestion: { index: 1, ...selected[0] }
   });
 }
 
-/**
- * Ghi nhận hoàn thành 1 trận đấu cho người chơi theo PID.
- * Chống tính trùng nhiều lần cùng một room.id.
- * Trả về { counted, completedMatches, wheelProgress, triggeredWheel }.
- */
 function recordPlayerMatchCompletion(pid, roomId) {
   const rec = recByPid(pid);
   if (!rec || !roomId) {
@@ -590,7 +670,6 @@ function recordPlayerMatchCompletion(pid, roomId) {
   }
   if (!rec.countedRooms) rec.countedRooms = new Set();
 
-  // Chống đếm trùng cùng một trận đấu (do lặp event, reconnect, socket glitch...)
   if (rec.countedRooms.has(roomId)) {
     return {
       counted: false,
@@ -607,7 +686,6 @@ function recordPlayerMatchCompletion(pid, roomId) {
   let triggeredWheel = false;
   if (rec.wheelProgress >= WHEEL_MATCH_STEP) {
     triggeredWheel = true;
-    // Reset bộ đếm tiến trình về 0 để bắt đầu chu kỳ 3 trận tiếp theo
     rec.wheelProgress = 0;
   }
 
@@ -623,6 +701,10 @@ function finishRoom(room, winnerRole, reason = 'nomoves') {
   if (!room || room.finished) return;
   room.finished = true;
   room.paused = false;
+  if (room.inMatchWheel && room.inMatchWheel.timer) {
+    clearTimeout(room.inMatchWheel.timer);
+    room.inMatchWheel = null;
+  }
   clearDisconnectTimers(room);
 
   const W = getRoomRec(room, winnerRole);
@@ -636,7 +718,6 @@ function finishRoom(room, winnerRole, reason = 'nomoves') {
     const newL = Math.max(0, L.elo - baseGain);
     const baseLoss = Number((L.elo - newL).toFixed(1));
 
-    // Cập nhật số trận hoàn thành độc lập cho từng người chơi trong phòng
     const roles = [winnerRole, winnerRole ^ 1];
     roles.forEach((role) => {
       const pid = role === 0 ? room.p1Pid : room.p2Pid;
@@ -658,12 +739,10 @@ function finishRoom(room, winnerRole, reason = 'nomoves') {
       }
 
       if (status.triggeredWheel) {
-        // Hoàn thành đủ 3 trận -> Quay Vòng quay may mắn trước, sau đó vào Quiz
         triggerPostMatchLuckyWheel(pid, oppPid, status.completedMatches, () => {
           startQuizSession(room, role, resultType, baseGain, baseLoss, eloBefore);
         });
       } else {
-        // Trận 1 hoặc 2 trong chu kỳ -> Không quay, vào thẳng Quiz sau trận
         startQuizSession(room, role, resultType, baseGain, baseLoss, eloBefore);
       }
     });
@@ -691,7 +770,6 @@ function leaveRoom(socket, immediate = true) {
     return;
   }
 
-  // Disconnect grace window so player can reconnect without losing state
   room.disconnected[role] = true;
   if (room.disconnectTimers[role]) clearTimeout(room.disconnectTimers[role]);
   room.disconnectTimers[role] = setTimeout(() => {
@@ -704,10 +782,10 @@ function leaveRoom(socket, immediate = true) {
 }
 
 function tryReconnectPlayer(socket, pid) {
-  // 1. Nếu người chơi đang trong sự kiện Vòng quay may mắn sau trận, đồng bộ lại modal
   const activeWheel = pidToActiveWheel.get(pid);
   if (activeWheel) {
     socket.emit('lucky_wheel_start', {
+      mode: 'post_match',
       eventId: activeWheel.eventId,
       spinnerPid: activeWheel.spinnerPid,
       spinnerName: activeWheel.spinnerName,
@@ -727,7 +805,6 @@ function tryReconnectPlayer(socket, pid) {
     }
   }
 
-  // 2. Đồng bộ nếu người chơi đang trong trận đấu diễn ra
   const roomId = pidToRoom.get(pid);
   if (!roomId) return false;
   const room = roomsById.get(roomId);
@@ -767,11 +844,13 @@ function tryReconnectPlayer(socket, pid) {
     p2Name: r2 ? r2.name : room.p2Name,
     elo: [r1 ? r1.elo : START_ELO, r2 ? r2.elo : START_ELO],
     moveCount: room.moveCount,
-    paused: false,
+    extraTurns: room.extraTurns || [0, 0],
+    paused: !!room.paused,
     buffs: {
       0: { x2: !!(r1 && r1.pendingX2Buff) },
       1: { x2: !!(r2 && r2.pendingX2Buff) }
     },
+    matchEffects: room.matchEffects,
     lastStatePacket: room.lastStatePacket
   });
 
@@ -833,15 +912,21 @@ io.on('connection', (socket) => {
         tm: MATCH_MINUTES,
         initialSpots,
         currentTurn: firstTurn,
-        moveCount: 0, // Chỉ đếm số lượt đi trong trận hiện tại (không dùng để kích hoạt Lucky Wheel)
+        moveCount: 0,
+        extraTurns: [0, 0],
         lastSpotsCount: initialSpots.length,
         lastLinesCount: 0,
         lastStatePacket: null,
         paused: false,
         finished: false,
+        inMatchWheel: null,
         buffs: {
           0: { x2: !!r1.pendingX2Buff },
           1: { x2: !!r2.pendingX2Buff }
+        },
+        matchEffects: {
+          0: { shield: false, bet: false },
+          1: { shield: false, bet: false }
         },
         eloBefore: [r1.elo, r2.elo],
         disconnected: { 0: false, 1: false },
@@ -862,7 +947,8 @@ io.on('connection', (socket) => {
         p1Name: r1.name,
         p2Name: r2.name,
         elo: [r1.elo, r2.elo],
-        buffs: room.buffs
+        buffs: room.buffs,
+        matchEffects: room.matchEffects
       };
       p1.emit('match_start', { ...matchData, role: 0 });
       p2.emit('match_start', { ...matchData, role: 1 });
@@ -878,6 +964,173 @@ io.on('connection', (socket) => {
 
   socket.on('leave_match', () => leaveRoom(socket, true));
 
+  // Sử dụng vật phẩm trực tiếp trong trận đấu
+  socket.on('use_item', (data) => {
+    const room = rooms[socket.id];
+    if (!room || room.finished || room.paused || !data || typeof data !== 'object') return;
+    const role = getRoomRole(room, socket.id);
+    if (role < 0) return;
+
+    const itemId = String(data.itemId || '');
+    const meta = ITEM_CATALOG[itemId];
+    if (!meta) {
+      socket.emit('item_error', { message: 'Vật phẩm không tồn tại.' });
+      return;
+    }
+
+    const playerRec = getRoomRec(room, role);
+    if (!playerRec || !playerRec.inventory || (playerRec.inventory[itemId] || 0) <= 0) {
+      socket.emit('item_error', { message: 'Bạn không còn vật phẩm này trong túi.' });
+      return;
+    }
+
+    // Kiểm tra điều kiện hợp lệ theo từng loại item
+    if (itemId === 'shield') {
+      if (room.matchEffects[role].shield) {
+        socket.emit('item_error', { message: 'Khiên Elo đã được kích hoạt trong trận này.' });
+        return;
+      }
+      playerRec.inventory.shield -= 1;
+      room.matchEffects[role].shield = true;
+      socket.emit('profile', profileOf(playerRec));
+      io.to(room.id).emit('item_used', {
+        role,
+        playerName: playerRec.name,
+        itemId,
+        itemName: meta.name,
+        icon: meta.icon,
+        matchEffects: room.matchEffects,
+        summaryText: `${playerRec.name} kích hoạt ${meta.icon} ${meta.name} — miễn nhiễm trừ Elo nếu thua!`
+      });
+      return;
+    }
+
+    if (itemId === 'bet') {
+      if (room.moveCount > 2) {
+        socket.emit('item_error', { message: 'Item Đặt cược Elo chỉ dùng được ở đầu trận (2 lượt đầu).' });
+        return;
+      }
+      if (room.matchEffects[role].bet) {
+        socket.emit('item_error', { message: 'Bạn đã kích hoạt Cược Elo trong trận này rồi.' });
+        return;
+      }
+      playerRec.inventory.bet -= 1;
+      room.matchEffects[role].bet = true;
+      socket.emit('profile', profileOf(playerRec));
+      io.to(room.id).emit('item_used', {
+        role,
+        playerName: playerRec.name,
+        itemId,
+        itemName: meta.name,
+        icon: meta.icon,
+        matchEffects: room.matchEffects,
+        summaryText: `${playerRec.name} đặt cược ${meta.icon} x${BET_MULTIPLIER} Elo cho trận đấu này!`
+      });
+      return;
+    }
+
+    if (itemId === 'add_spot' || itemId === 'cut_edges') {
+      if (role !== room.currentTurn) {
+        socket.emit('item_error', { message: 'Chỉ dùng được vật phẩm tác động bàn cờ khi đang tới lượt của bạn.' });
+        return;
+      }
+      if (itemId === 'cut_edges' && room.lastLinesCount < 2) {
+        socket.emit('item_error', { message: 'Chưa có đường nối nào trên bàn cờ để cắt.' });
+        return;
+      }
+
+      playerRec.inventory[itemId] -= 1;
+      if (itemId === 'add_spot') room.lastSpotsCount += 1;
+      if (itemId === 'cut_edges') room.lastLinesCount = Math.max(0, room.lastLinesCount - 2);
+
+      socket.emit('profile', profileOf(playerRec));
+      io.to(room.id).emit('item_used', {
+        role,
+        playerName: playerRec.name,
+        itemId,
+        itemName: meta.name,
+        icon: meta.icon,
+        connections: ITEM_ADD_SPOT_CONNECTIONS,
+        cutCount: ITEM_CUT_EDGES_COUNT,
+        matchEffects: room.matchEffects,
+        summaryText: itemId === 'add_spot'
+          ? `${playerRec.name} dùng ${meta.icon} Thêm 1 điểm nối (gồm ${ITEM_ADD_SPOT_CONNECTIONS} kết nối sẵn có)!`
+          : `${playerRec.name} dùng ${meta.icon} Cắt đứt ngẫu nhiên 1 cặp đường nối trên bàn cờ!`
+      });
+      return;
+    }
+
+    if (itemId === 'risk_wheel') {
+      if (role !== room.currentTurn) {
+        socket.emit('item_error', { message: 'Chỉ dùng được Vòng quay may rủi khi đang tới lượt của bạn.' });
+        return;
+      }
+      playerRec.inventory.risk_wheel -= 1;
+      socket.emit('profile', profileOf(playerRec));
+
+      room.paused = true;
+      const targetIndex = Math.floor(Math.random() * IN_MATCH_RISK_SEGMENTS.length);
+      const outcome = IN_MATCH_RISK_SEGMENTS[targetIndex];
+      const eventId = 'rw_' + crypto.randomBytes(6).toString('hex');
+
+      io.to(room.id).emit('risk_wheel_start', {
+        eventId,
+        role,
+        playerName: playerRec.name,
+        segments: IN_MATCH_RISK_SEGMENTS,
+        targetIndex,
+        outcomeType: outcome.type,
+        spinDurationMs: 2800
+      });
+
+      const timer = setTimeout(() => {
+        if (!room || room.finished) return;
+        room.paused = false;
+        room.inMatchWheel = null;
+
+        let nextTurn = room.currentTurn;
+        let effectSummary = '';
+
+        if (outcome.type === 'lose_turn') {
+          room.extraTurns[role] = 0;
+          nextTurn = role ^ 1;
+          room.currentTurn = nextTurn;
+          effectSummary = `⏭️ ${playerRec.name} quay trúng MẤT LƯỢT NỐI! Lượt chuyển sang đối thủ.`;
+        } else if (outcome.type === 'double_turn') {
+          room.extraTurns[role] = 1; // Sau nước đi hiện tại sẽ được đi thêm 1 nước nữa
+          nextTurn = role;
+          effectSummary = `⚡ ${playerRec.name} quay trúng ĐƯỢC 2 LƯỢT NỐI LIÊN TIẾP!`;
+        } else if (outcome.type === 'swap_nodes') {
+          effectSummary = `🔄 ${playerRec.name} quay trúng HOÁN ĐỔI VỊ TRÍ 2 NÚT BẤT KỲ trên bàn cờ!`;
+        } else if (outcome.type === 'spawn_node') {
+          room.lastSpotsCount += 1;
+          effectSummary = `➕ ${playerRec.name} quay trúng THÊM 1 ĐIỂM NỐI MỚI (${ITEM_ADD_SPOT_CONNECTIONS} kết nối)!`;
+        } else if (outcome.type === 'cut_random') {
+          if (room.lastLinesCount >= 2) {
+            room.lastLinesCount = Math.max(0, room.lastLinesCount - 2);
+            effectSummary = `✂️ ${playerRec.name} quay trúng MẤT NGẪU NHIÊN 1 CẶP ĐƯỜNG NỐI trên bàn!`;
+          } else {
+            effectSummary = `✂️ ${playerRec.name} quay trúng CẮT ĐƯỜNG nhưng bàn cờ chưa có đường nào!`;
+          }
+        } else if (outcome.type === 'bonus_time') {
+          effectSummary = `⏳ ${playerRec.name} quay trúng +30 GIÂY vào đồng hồ thi đấu!`;
+        }
+
+        io.to(room.id).emit('risk_wheel_complete', {
+          eventId,
+          role,
+          playerName: playerRec.name,
+          outcomeType: outcome.type,
+          nextTurn,
+          extraTurns: room.extraTurns,
+          summaryText: effectSummary
+        });
+      }, 3300);
+
+      room.inMatchWheel = { eventId, timer };
+    }
+  });
+
   socket.on('game_action', (msg) => {
     const room = rooms[socket.id];
     if (!room || !msg || typeof msg !== 'object') return;
@@ -886,9 +1139,28 @@ io.on('connection', (socket) => {
     const senderRole = getRoomRole(room, socket.id);
     if (senderRole < 0) return;
 
+    if (room.paused) {
+      socket.emit('item_error', { message: 'Vòng quay may rủi đang diễn ra, tạm khóa thao tác.' });
+      return;
+    }
+
     if (msg.t === 'resign') {
       socket.to(room.id).emit('game_action', { t: 'resign', i: senderRole });
       finishRoom(room, senderRole ^ 1, 'resign');
+      return;
+    }
+
+    // Đồng bộ bàn cờ sau khi item tác động (thêm nút, cắt đường, hoán đổi nút, cộng giờ)
+    if (msg.t === 'item_board_sync' && typeof msg.s === 'string') {
+      try {
+        const parsed = JSON.parse(msg.s);
+        if (parsed && Array.isArray(parsed.spots) && Array.isArray(parsed.lines)) {
+          room.lastSpotsCount = parsed.spots.length;
+          room.lastLinesCount = parsed.lines.length;
+          room.lastStatePacket = msg.s;
+          socket.to(room.id).emit('game_action', msg);
+        }
+      } catch (e) {}
       return;
     }
 
@@ -901,7 +1173,6 @@ io.on('connection', (socket) => {
       }
       if (!parsed || !Array.isArray(parsed.spots) || !Array.isArray(parsed.lines)) return;
 
-      // Xác thực lượt đi hợp lệ (1 điểm mới, 2 cạnh mới) - chỉ tăng moveCount cho gameplay
       if (!msg.lot) {
         if (senderRole !== room.currentTurn) return;
         const isValidNewCommit =
@@ -915,10 +1186,27 @@ io.on('connection', (socket) => {
         room.lastSpotsCount = parsed.spots.length;
         room.lastLinesCount = parsed.lines.length;
         room.moveCount += 1;
-        room.currentTurn = senderRole ^ 1;
-        room.lastStatePacket = msg.s;
 
-        socket.to(room.id).emit('game_action', msg);
+        // Xử lý nếu người chơi đang có lượt đi liên tiếp từ Vòng quay may rủi
+        if (room.extraTurns && room.extraTurns[senderRole] > 0) {
+          room.extraTurns[senderRole] -= 1;
+          room.currentTurn = senderRole;
+          parsed.turn = senderRole;
+        } else {
+          room.currentTurn = senderRole ^ 1;
+          parsed.turn = room.currentTurn;
+        }
+
+        const updatedStateStr = JSON.stringify(parsed);
+        room.lastStatePacket = updatedStateStr;
+
+        io.to(room.id).emit('game_action', {
+          t: 'state',
+          s: updatedStateStr,
+          actor: senderRole,
+          nextTurn: room.currentTurn,
+          extraTurnUsed: room.currentTurn === senderRole
+        });
         return;
       }
     }
@@ -1033,27 +1321,50 @@ io.on('connection', (socket) => {
 
         let matchResultDelta = 0;
         let quizBonus = 0;
+        let betDelta = 0;
         let x2Bonus = 0;
+        let shieldSaved = 0;
         let endOfMatchDelta = 0;
 
         if (session.resultType === 'win') {
           matchResultDelta = session.baseGain;
-          quizBonus = session.correctCount === 3 ? Math.round(session.baseGain * 1.5) : 0;
-          const positiveReward = matchResultDelta + quizBonus;
-          x2Bonus = session.hasX2 && positiveReward > 0 ? positiveReward : 0;
-          endOfMatchDelta = Number((positiveReward + x2Bonus).toFixed(1));
+          // Đúng 3/3 câu khi thắng: nhân hệ số X (QUIZ_WIN_MULTIPLIER = 2.5x)
+          const multipliedWin = session.correctCount === 3
+            ? roundElo(session.baseGain * QUIZ_WIN_MULTIPLIER)
+            : session.baseGain;
+          quizBonus = Number((multipliedWin - matchResultDelta).toFixed(1));
+
+          // Item Đặt cược Elo (thắng nhân hệ số BET_MULTIPLIER)
+          const afterBet = session.hasBet ? roundElo(multipliedWin * BET_MULTIPLIER) : multipliedWin;
+          betDelta = Number((afterBet - multipliedWin).toFixed(1));
+
+          // Buff x2 ELO từ Vòng quay may mắn
+          x2Bonus = session.hasX2 && afterBet > 0 ? afterBet : 0;
+          endOfMatchDelta = Number((afterBet + x2Bonus).toFixed(1));
+
           playerRec.elo = roundElo(playerRec.elo + endOfMatchDelta);
           playerRec.wins++;
           playerRec.games++;
         } else {
-          matchResultDelta = -session.baseLoss;
-          if (session.correctCount === 3) {
-            endOfMatchDelta = -0.5;
-            quizBonus = Number((session.baseLoss - 0.5).toFixed(1));
+          // Thua trận:
+          // - Nếu dùng Khiên Elo -> Không mất Elo (0)
+          // - Nếu trả lời đúng 3/3 -> Chỉ bị trừ 50% số điểm
+          // - Nếu dùng Cược Elo -> Nhân hệ số X số điểm bị trừ
+          const rawLoss = session.baseLoss;
+          const afterQuizLoss = session.correctCount === 3 ? roundElo(rawLoss * 0.5) : rawLoss;
+          const afterBetLoss = session.hasBet ? roundElo(afterQuizLoss * BET_MULTIPLIER) : afterQuizLoss;
+
+          matchResultDelta = -rawLoss;
+          quizBonus = Number((rawLoss - afterQuizLoss).toFixed(1));
+          betDelta = Number((afterQuizLoss - afterBetLoss).toFixed(1));
+
+          if (session.hasShield) {
+            shieldSaved = afterBetLoss;
+            endOfMatchDelta = 0;
           } else {
-            endOfMatchDelta = -session.baseLoss;
-            quizBonus = 0;
+            endOfMatchDelta = -afterBetLoss;
           }
+
           x2Bonus = 0;
           playerRec.elo = roundElo(playerRec.elo + endOfMatchDelta);
           playerRec.games++;
@@ -1074,6 +1385,8 @@ io.on('connection', (socket) => {
             eloBefore: session.eloBefore,
             matchResult: matchResultDelta,
             quizBonus,
+            betDelta,
+            shieldSaved,
             luckyWheelBonus: x2Bonus,
             stealSwapTotal: wheelTotal,
             finalEloChange,
