@@ -24,6 +24,8 @@ header p{margin:0;color:var(--mut);font-size:.9rem}
 .pl.on{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 18%,transparent),0 6px 18px color-mix(in srgb,var(--c) 12%,transparent)}
 .pl input:disabled{opacity:.88}
 .buff-badge{font-size:.68rem;font-weight:800;padding:1px 7px;border-radius:99px;background:linear-gradient(135deg,#f59f00,#f76707);color:#fff;letter-spacing:.03em;white-space:nowrap;box-shadow:0 2px 6px rgba(245,159,0,.35)}
+.buff-badge.shield{background:linear-gradient(135deg,#0ca678,#16a34a);box-shadow:0 2px 6px rgba(12,166,120,.35)}
+.buff-badge.bet{background:linear-gradient(135deg,#e03131,#d9480f);box-shadow:0 2px 6px rgba(224,49,49,.35)}
 .spin-badge{font-size:.68rem;font-weight:700;padding:1px 7px;border-radius:99px;background:color-mix(in srgb,var(--purple) 18%,transparent);color:var(--purple);border:1px solid color-mix(in srgb,var(--purple) 40%,transparent);white-space:nowrap;animation:pulseBadge 1s infinite}
 .delta-pill{font-size:.7rem;font-weight:700;padding:1px 6px;border-radius:6px;white-space:nowrap}
 .delta-pill.pos{color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
@@ -67,7 +69,7 @@ textarea{display:block;width:100%;height:4.5em;margin:4px 0 10px;padding:6px 8px
 .pl.on .clk{color:var(--ink)}.clk.low{color:#e03131!important;animation:bl 1s infinite}
 @keyframes bl{50%{opacity:.4}}
 @media(prefers-reduced-motion:reduce){.clk.low,.spin-badge{animation:none}.lr span{transition:none}}
-body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=lobby] #eventLogBox,body[data-ph=count] .sheet,body[data-ph=count] .bar,body[data-ph=count] #eventLogBox,body[data-ph=play] #lobby,body[data-ph=play] #net,body[data-ph=play] #lb{display:none}
+body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=lobby] #itemDock,body[data-ph=lobby] #eventLogBox,body[data-ph=count] .sheet,body[data-ph=count] .bar,body[data-ph=count] #itemDock,body[data-ph=count] #eventLogBox,body[data-ph=play] #lobby,body[data-ph=play] #net,body[data-ph=play] #lb{display:none}
 .lob{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:16px 20px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
 .lob h2{font:700 1.1rem/1.2 var(--f);margin:0}.lob p{margin:0;color:var(--mut);max-width:70ch;font-size:.9rem}.lob small{color:var(--mut);font-size:.8rem}
 .lob-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
@@ -116,6 +118,24 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=lobby] #eventLo
 .online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:5px;box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent);animation:pulseOnline 2s infinite}
 @keyframes pulseOnline{0%,100%{opacity:1}50%{opacity:.45}}
 
+/* Lobby Inventory Preview */
+.lobby-inv{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;border-radius:10px;background:var(--paper);border:1px solid var(--line);font-size:.82rem}
+.lobby-inv-title{font-weight:700;color:var(--mut);margin-right:4px}
+.inv-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;background:var(--card);border:1px solid var(--line);font-weight:600;font-size:.78rem}
+.inv-chip b{color:var(--p2);font-weight:800}
+
+/* In-Match Item Dock */
+.item-dock{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+.item-dock-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.84rem;font-weight:700;color:var(--ink)}
+.item-dock-hint{font-size:.76rem;font-weight:500;color:var(--mut)}
+.item-list{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.item-btn{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:9px 8px;border-radius:11px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);text-align:center;cursor:pointer;transition:all .16s}
+.item-btn:hover:not(:disabled){border-color:var(--purple);transform:translateY(-2px);box-shadow:0 4px 12px rgba(121,80,242,.18)}
+.item-btn .it-ico{font-size:1.25rem;line-height:1}
+.item-btn .it-name{font-size:.74rem;font-weight:700;line-height:1.2}
+.item-btn .it-qty{position:absolute;top:5px;right:6px;font-size:.68rem;font-weight:800;padding:1px 6px;border-radius:99px;background:var(--ink);color:var(--paper)}
+.item-btn.active-effect{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--paper))}
+
 /* Match Event Log */
 .event-log{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
 .el-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:700;font-size:.85rem;color:var(--ink)}
@@ -129,6 +149,7 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=lobby] #eventLo
 .el-item.steal{border-left-color:var(--err)}
 .el-item.swap{border-left-color:var(--purple)}
 .el-item.quiz{border-left-color:var(--ok)}
+.el-item.item{border-left-color:var(--gold)}
 .el-time{color:var(--mut);font-size:.72rem;font-variant-numeric:tabular-nums;margin-left:auto;white-space:nowrap}
 
 /* Unified Glassmorphism Modals */
@@ -176,6 +197,7 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=lobby] #eventLo
 
 @media(max-width:680px){
   .stats-grid{grid-template-columns:1fr}
+  .item-list{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:560px){
   body{padding:10px}
@@ -203,6 +225,8 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=lobby] #eventLo
     <div class="pl-meta">
       <span class="elo-wrap"><span class="elo" id="e0" hidden></span><span class="elo-float-anchor" id="ef0"></span></span>
       <span class="buff-badge" id="bf0" hidden>x2 ELO</span>
+      <span class="buff-badge shield" id="sh0" hidden>🛡️ Khiên Elo</span>
+      <span class="buff-badge bet" id="bt0" hidden>🎲 Cược x2</span>
       <span class="spin-badge" id="sp0" hidden>🎡 Đang quay</span>
       <span class="delta-pill" id="dp0" hidden></span>
     </div>
@@ -220,6 +244,8 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=lobby] #eventLo
     <div class="pl-meta">
       <span class="elo-wrap"><span class="elo" id="e1" hidden></span><span class="elo-float-anchor" id="ef1"></span></span>
       <span class="buff-badge" id="bf1" hidden>x2 ELO</span>
+      <span class="buff-badge shield" id="sh1" hidden>🛡️ Khiên Elo</span>
+      <span class="buff-badge bet" id="bt1" hidden>🎲 Cược x2</span>
       <span class="spin-badge" id="sp1" hidden>🎡 Đang quay</span>
       <span class="delta-pill" id="dp1" hidden></span>
     </div>
@@ -252,19 +278,30 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=lobby] #eventLo
     </div>
   </div>
 </div>
+<div class="lobby-inv" id="lobbyInvBar">
+  <span class="lobby-inv-title">🎒 Kho vật phẩm của bạn:</span>
+  <span id="lobbyInvItems">Đang tải…</span>
+</div>
 <div class="match-bar"><label for="pName"><b>Tên của bạn:</b></label><input type="text" id="pName" maxlength="16" autocomplete="off" placeholder="Tên hiển thị"><button id="qb" class="btn-auto" disabled>⚡ Tìm trận nhanh</button><span id="sv"></span><span class="sp"></span><span>Elo của bạn: <b id="myElo">…</b></span></div>
 <p id="qm" role="status"></p>
-<small>Tìm trận nhanh: ghép tự động qua máy chủ, 5 phút mỗi người, có tính điểm Elo và kích hoạt Vòng quay may mắn sau mỗi 3 trận hoàn thành. Chơi qua “Play on two devices” (P2P) thì không tính Elo.</small>
+<small>Tìm trận nhanh: ghép tự động qua máy chủ, 5 phút mỗi người, tính điểm Elo, dùng vật phẩm chiến thuật trong trận và kích hoạt Vòng quay may mắn sau mỗi 3 trận hoàn thành.</small>
 <p id="lm"></p><div class="lrow"><label>Spots <select id="n"><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label><label>Minutes per player <input id="tm" type="number" min="0" max="999" step="any" value="5" inputmode="decimal" aria-label="Minutes per player, 0 for no limit"></label><small>0 = no time limit</small></div><p>Rules lock once the match starts.</p><div id="cd" hidden></div></section>
 <section class="lob" id="lb"><h2>🏆 Bảng xếp hạng Elo (Top 10)</h2>
 <table class="lb-table"><thead><tr><th>#</th><th>Tên người chơi</th><th>Điểm Elo</th><th>Số ván</th></tr></thead><tbody id="lbBody"><tr><td colspan="4">Chưa có dữ liệu</td></tr></tbody></table>
-<small>Người chơi mới bắt đầu với 500 điểm Elo. Thắng ván tìm trận nhanh được cộng điểm, thua bị trừ điểm.</small></section>
+<small>Người chơi mới bắt đầu với 500 điểm Elo. Trả lời đúng 3/3 câu hỏi cuối trận: giảm 50% điểm trừ khi thua và nhân hệ số x2.5 khi thắng!</small></section>
 <div class="sheet" id="sheet"><canvas id="c"></canvas><div id="bn" hidden></div><div id="lot" hidden><div class="lr"><span id="l0" style="--c:var(--p1)"></span><span id="l1" style="--c:var(--p2)"></span></div></div></div>
 <div class="bar">
 <span class="stat-pill" id="statMoves">MOVES: <b>0</b></span>
 <span class="stat-pill" id="statSpots">SPOTS: <b>0</b></span>
 <span class="sp"></span><button id="zo" title="Zoom out" aria-label="Zoom out">−</button><button id="zi" title="Zoom in" aria-label="Zoom in">+</button><button id="ft" title="Fit everything in view">Fit</button><button id="un">Undo</button><button id="nw" class="pri">New game</button>
 </div>
+<section class="item-dock" id="itemDock" hidden>
+  <div class="item-dock-head">
+    <span>🎒 Vật phẩm chiến thuật (Chế độ xếp hạng)</span>
+    <span class="item-dock-hint" id="itemHint">Bấm vào vật phẩm để kích hoạt ngay trong trận</span>
+  </div>
+  <div class="item-list" id="itemList"></div>
+</section>
 <section class="event-log" id="eventLogBox">
   <div class="el-head"><span>📜 Nhật ký sự kiện trận đấu</span><button id="elToggle" type="button">Thu gọn</button></div>
   <ul id="eventLogList"></ul>
@@ -289,7 +326,7 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=lobby] #eventLo
 </details></details>
 </main>
 
-<!-- Modal Vòng quay may mắn (Kích hoạt sau mỗi 3 trận hoàn thành) -->
+<!-- Modal Vòng quay may mắn (Sau mỗi 3 trận) & Vòng quay may rủi trong trận -->
 <div id="wheelModal" class="modal-backdrop" hidden>
   <div class="modal-card">
     <h2 id="wheelTitle">🎡 Vòng quay may mắn</h2>
@@ -352,8 +389,18 @@ let spots,lines,turn,over,hist,cur,dc,pc2,go=false,tout=false,lim=0,clk=[0,0],la
 const names=['Player 1','Player 2'],ptr=new Map();
 let ph='lobby',rdy=[false,false],cdt=0,rz=false,fo=false,srv=false,eloMsg='',rzA=false,ended=false,warned=false,lsec=-1,bt=0,fxr=false,mute=false,ac;
 const fx=[],MAX_FX=180;
-// moveCount: số lượt đi trong trận hiện tại; matchCount / wheelProgress: số trận hoàn thành để quay Lucky Wheel
+
+// Tách bạch moveCount (lượt đi trong trận) và matchCount / wheelProgress (trận hoàn thành)
 let moveCount=0,matchCount=0,wheelProgress=0,wheelStep=3,pendingX2Buff=false;
+let myInventory={shield:1,bet:1,add_spot:1,cut_edges:1,risk_wheel:1};
+let itemCatalog={
+  shield:{id:'shield',icon:'🛡️',name:'Khiên Elo',desc:'Không bị trừ Elo nếu thua trận này.'},
+  bet:{id:'bet',icon:'🎲',name:'Cược Elo x2',desc:'Dùng ở đầu trận: Thắng x2 Elo nhận, thua -x2 Elo mất.'},
+  add_spot:{id:'add_spot',icon:'➕',name:'Thêm 1 Nút (2 kết nối)',desc:'Tạo thêm 1 điểm nối mới có sẵn 2 kết nối trên bàn.'},
+  cut_edges:{id:'cut_edges',icon:'✂️',name:'Cắt Đường Ngẫu Nhiên',desc:'Xóa ngẫu nhiên 1 cặp đường nối trên bàn cờ và trả lại kết nối.'},
+  risk_wheel:{id:'risk_wheel',icon:'🎰',name:'Vòng Quay May Rủi',desc:'Quay ngay trong trận: +2 lượt liên tiếp, mất lượt, swap 2 nút, thêm nút, cắt đường hoặc +30s.'}
+};
+let matchEffects={0:{shield:false,bet:false},1:{shield:false,bet:false}};
 let lastMove=null,wheelFrozen=false,activeBuffs={0:{x2:false},1:{x2:false}},spinningRole=-1,playerElos=[500,500];
 let wheelAnimId=0,wheelAngle=0,wheelSegments=[],guessTimerId=0,currentWheelEventId=null;
 let eventLog=[];
@@ -385,7 +432,8 @@ const SND={
  spinTick:()=>tone(1100,.03,'triangle',.07,0,720),
  spinWin:()=>[587,740,880,1175].forEach((f,i)=>tone(f,.22,'triangle',.16,i*.07)),
  steal:()=>{tone(660,.12,'sawtooth',.12,0,320);tone(880,.18,'triangle',.14,.1,1240)},
- swap:()=>{tone(440,.14,'sine',.15,0,880);tone(880,.16,'sine',.15,.12,440);tone(660,.2,'triangle',.14,.24,990)}
+ swap:()=>{tone(440,.14,'sine',.15,0,880);tone(880,.16,'sine',.15,.12,440);tone(660,.2,'triangle',.14,.24,990)},
+ item:()=>{tone(620,.09,'triangle',.16);tone(930,.14,'triangle',.16,.07)}
 };
 const snd=(k,a)=>SND[k]&&SND[k](a);
 function setMute(v){mute=v;try{localStorage.setItem('sp-mute',v?'1':'0')}catch(e){}$('mu').textContent=v?'🔇 Sound off':'🔊 Sound on'}
@@ -407,6 +455,62 @@ function updateWheelProgressUI(){
   if(!el)return;
   const label=`${wheelProgress}/${wheelStep} trận`+(pendingX2Buff?' · ⚡x2':'');
   bumpValue(el,label);
+}
+
+function renderInventoryUI(){
+  const keys=['shield','bet','add_spot','cut_edges','risk_wheel'];
+  // Lobby preview
+  const lobbyWrap=$('lobbyInvItems');
+  if(lobbyWrap){
+    lobbyWrap.replaceChildren();
+    keys.forEach(k=>{
+      const m=itemCatalog[k];if(!m)return;
+      const qty=myInventory[k]||0;
+      const chip=document.createElement('span');
+      chip.className='inv-chip';
+      chip.title=m.desc;
+      chip.innerHTML=`${m.icon} ${m.name}: <b>${qty}</b>`;
+      lobbyWrap.appendChild(chip);
+    });
+  }
+
+  // In-match dock (chỉ hiện ở chế độ xếp hạng server)
+  const dock=$('itemDock'),list=$('itemList');
+  if(!dock||!list)return;
+  dock.hidden=!(ph==='play'&&srv);
+  if(dock.hidden)return;
+
+  list.replaceChildren();
+  const isMyTurn=go&&!over&&!wheelFrozen&&seat===turn;
+  const mv=Math.floor(lines.length/2);
+
+  keys.forEach(k=>{
+    const m=itemCatalog[k];if(!m)return;
+    const qty=myInventory[k]||0;
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='item-btn';
+    btn.title=m.desc;
+
+    let disabled=qty<=0||over||!go||wheelFrozen;
+    let active=false;
+    if(k==='shield'&&seat>=0&&matchEffects[seat]&&matchEffects[seat].shield){disabled=true;active=true}
+    if(k==='bet'){
+      if(seat>=0&&matchEffects[seat]&&matchEffects[seat].bet){disabled=true;active=true}
+      else if(mv>2)disabled=true;
+    }
+    if((k==='add_spot'||k==='cut_edges'||k==='risk_wheel')&&!isMyTurn)disabled=true;
+    if(k==='cut_edges'&&lines.length<2)disabled=true;
+
+    if(active)btn.classList.add('active-effect');
+    btn.disabled=disabled;
+    btn.innerHTML=`<span class="it-qty">${active?'✓':qty}</span><span class="it-ico">${m.icon}</span><span class="it-name">${m.name}</span>`;
+    btn.onclick=()=>{
+      if(!socket||!socket.connected)return;
+      socket.emit('use_item',{itemId:k});
+    };
+    list.appendChild(btn);
+  });
 }
 
 // Match Event Log
@@ -452,9 +556,11 @@ function spawnEloFloat(role,text,cls){
 }
 function updatePlayerBadges(){
   [0,1].forEach(i=>{
-    const bf=$('bf'+i),sp=$('sp'+i);
+    const bf=$('bf'+i),sp=$('sp'+i),sh=$('sh'+i),btBadge=$('bt'+i);
     if(bf)bf.hidden=!(activeBuffs[i]&&activeBuffs[i].x2);
     if(sp)sp.hidden=!(spinningRole===i);
+    if(sh)sh.hidden=!(matchEffects[i]&&matchEffects[i].shield);
+    if(btBadge)btBadge.hidden=!(matchEffects[i]&&matchEffects[i].bet);
   });
 }
 
@@ -517,7 +623,7 @@ function endFx(){
   confettiBurst();
   for(let k=0;k<4;k++)setTimeout(()=>{const q=wld([Math.random()*W,Math.random()*H]);burst(q[0],q[1],col,14,2.8,950)},k*200);
 }
-function setPh(p){ph=p;document.body.dataset.ph=p;lobbyUI()}
+function setPh(p){ph=p;document.body.dataset.ph=p;lobbyUI();renderInventoryUI()}
 function lobbyUI(){
   const L=ph=='lobby';qmUI();
   [0,1].forEach(i=>{const b=$('r'+i);b.hidden=ph=='play';b.classList.toggle('on',rdy[i]);b.textContent=rdy[i]?'✓ Ready':'Ready?';b.disabled=!L||(seat>=0&&i!=seat);
@@ -535,7 +641,9 @@ function toLobby(s){
   clearTimeout(cdt);lt++;closeWheelModal();
   $('lot').hidden=$('cd').hidden=$('bn').hidden=true;
   spots=[];lines=[];hist=[];fx.length=0;over=tout=rz=fo=go=false;wheelFrozen=false;
-  moveCount=0;lastMove=null;activeBuffs={0:{x2:false},1:{x2:false}};spinningRole=-1;
+  moveCount=0;lastMove=null;activeBuffs={0:{x2:false},1:{x2:false}};
+  matchEffects={0:{shield:false,bet:false},1:{shield:false,bet:false}};
+  spinningRole=-1;
   [0,1].forEach(i=>{const dp=$('dp'+i);if(dp)dp.hidden=true});
   updatePlayerBadges();clearEventLog();
   eloMsg='';cur=null;rdy=[false,false];setPh('lobby');info();draw();
@@ -557,6 +665,7 @@ function newGame(pre){
   spots=[];lines=[];hist=[];over=tout=false;cur=null;rz=fo=ended=warned=false;wheelFrozen=false;
   moveCount=0;lastMove=null;
   activeBuffs=(pre&&pre.buffs)?pre.buffs:{0:{x2:false},1:{x2:false}};
+  matchEffects=(pre&&pre.matchEffects)?pre.matchEffects:{0:{shield:false,bet:false},1:{shield:false,bet:false}};
   spinningRole=-1;
   [0,1].forEach(i=>{const dp=$('dp'+i);if(dp)dp.hidden=true});
   updatePlayerBadges();clearEventLog();
@@ -608,6 +717,62 @@ function undo(){
   if(!hist.length||tout||!go||wheelFrozen)return;
   ({spots,lines,turn,moveCount}=JSON.parse(hist.pop()));
   lastMove=null;over=false;cur=null;info();draw();wake();
+}
+
+// ================= BOARD MANIPULATION HELPERS FOR ITEMS =================
+function spawnExtraSpotOnBoard(initialDegree=2){
+  let chosen=null;
+  for(let t=0;t<1500;t++){
+    const p={x:(Math.random()-.5)*(W-180),y:(Math.random()-.5)*(H-180),d:initialDegree};
+    const farFromSpots=spots.every(s=>Math.hypot(s.x-p.x,s.y-p.y)>75);
+    const farFromLines=lines.every(l=>l.p.every(q=>Math.hypot(q[0]-p.x,q[1]-p.y)>28));
+    if(farFromSpots&&farFromLines){chosen=p;break}
+  }
+  if(!chosen){
+    chosen={x:(Math.random()-.5)*220,y:(Math.random()-.5)*160,d:initialDegree};
+  }
+  spots.push(chosen);
+  burst(chosen.x,chosen.y,'#1c7ed6',16,2.6,750,1);
+}
+
+function cutRandomMoveOnBoard(){
+  if(lines.length<2)return false;
+  // Mỗi nước đi trong Sprouts tạo thành 1 cặp cạnh liền kề (e1, e2) nối qua 1 nút giữa
+  const pairCount=Math.floor(lines.length/2);
+  const pairIdx=Math.floor(Math.random()*pairCount);
+  const idx1=pairIdx*2,idx2=idx1+1;
+  const e1=lines[idx1],e2=lines[idx2];
+
+  // Hoàn trả bậc kết nối (d) cho các đầu mút
+  if(e1&&spots[e1.a])spots[e1.a].d=Math.max(0,spots[e1.a].d-1);
+  if(e1&&spots[e1.b])spots[e1.b].d=Math.max(0,spots[e1.b].d-1);
+  if(e2&&spots[e2.a])spots[e2.a].d=Math.max(0,spots[e2.a].d-1);
+  if(e2&&spots[e2.b])spots[e2.b].d=Math.max(0,spots[e2.b].d-1);
+
+  const midPt=(e1&&e1.p&&e1.p.length)?e1.p[e1.p.length-1]:[0,0];
+  burst(midPt[0],midPt[1],'#e03131',18,3,800,1);
+  lines.splice(idx1,2);
+  return true;
+}
+
+function swapTwoRandomSpotsOnBoard(){
+  if(spots.length<2)return false;
+  const i=Math.floor(Math.random()*spots.length);
+  let j=Math.floor(Math.random()*(spots.length-1));
+  if(j>=i)j++;
+
+  const tx=spots[i].x,ty=spots[i].y;
+  spots[i].x=spots[j].x;spots[i].y=spots[j].y;
+  spots[j].x=tx;spots[j].y=ty;
+
+  // Cập nhật đầu mút các đường nối gắn với 2 nút vừa hoán đổi
+  lines.forEach(l=>{
+    if(l.a===i||l.a===j){l.p[0][0]=spots[l.a].x;l.p[0][1]=spots[l.a].y}
+    if(l.b===i||l.b===j){const z=l.p[l.p.length-1];z[0]=spots[l.b].x;z[1]=spots[l.b].y}
+  });
+  burst(spots[i].x,spots[i].y,'#7950f2',14,2.5,700,1);
+  burst(spots[j].x,spots[j].y,'#7950f2',14,2.5,700,1);
+  return true;
 }
 
 function legal(a,b,s,t){
@@ -763,6 +928,7 @@ function info(){
   });
   updatePlayerBadges();
   updateStatsBar();
+  renderInventoryUI();
   const b=p=>{const x=document.createElement('b');x.style.color=pc(p);x.textContent=names[p];return x};
   e.replaceChildren(...(over?(rz?[b(turn),t(' resigned. '),b(turn^1),t(' wins!')]:fo?[b(turn),t(' left the match. '),b(turn^1),t(' wins!')]:tout?[b(turn),t(' ran out of time. '),b(turn^1),t(' wins!')]:[b(turn^1),t(' wins after '+mv+' moves. '),b(turn),t(' has no move left.')])
     :ph!='play'?[t(ph=='count'?'Match begin':rdy[0]&&rdy[1]?'Starting…':rdy[0]||rdy[1]?names[rdy[0]?0:1]+' is ready. Waiting for '+names[rdy[0]?1:0]+'.':'Choose the rules, then both players press Ready.')]
@@ -1045,9 +1211,16 @@ function handle(m){
     else if(m.t=='count'){if(ph=='lobby')runCount()}
     else if(m.t=='lobby')toLobby();
     else if(m.t=='resign'&&(m.i===0||m.i===1))resign(m.i);
+    else if(m.t=='item_board_sync'){
+      const o=JSON.parse(m.s);
+      ({spots,lines,turn,over,tout,clk,lim}=o);
+      moveCount=Math.floor(lines.length/2);
+      info();draw();wake();
+    }
     else if(m.t=='state'){
       const o=JSON.parse(m.s),pd0=spots.map(q=>q.d),prevLines=lines.length;
       ({spots,lines,turn,over,tout,clk,lim}=o);
+      if(typeof m.nextTurn==='number')turn=m.nextTurn;
       $('n').value=o.n;$('tm').value=lim/60000;hist=[];cur=null;last=performance.now();
       moveCount=Math.floor(lines.length/2);
       if(m.lot){
@@ -1056,9 +1229,12 @@ function handle(m){
       }else{
         lt++;$('lot').hidden=true;go=true;
         if(spots.length>pd0.length&&lines.length>=prevLines+2){
-          const actor=turn^1;
+          const actor=typeof m.actor==='number'?m.actor:(turn^1);
           lastMove={edges:[lines.length-2,lines.length-1],spot:spots.length-1,t:performance.now(),col:pc(actor)};
           logEvent('✏️',`${names[actor]} thực hiện nước đi #${moveCount}.`,'move');
+          if(m.extraTurnUsed){
+            logEvent('⚡',`${names[actor]} tiếp tục lượt nối thứ 2 liên tiếp!`,'item');
+          }
           satFx(pd0,pc(actor));
         }
       }
@@ -1143,7 +1319,7 @@ $('rcpy').onclick=()=>flash($('rcpy'),room,$('rcode'));
 $('rlnk').onclick=()=>flash($('rlnk'),roomLink());
 $('rshr').onclick=async()=>{try{await navigator.share(canLink?{title:'Sprouts',text:'Join my Sprouts game:',url:roomLink()}:{text:'Join my Sprouts game. Room code: '+room})}catch(e){}};
 
-// ================= LUCKY WHEEL UI & ANIMATION (3 TRẬN HOÀN THÀNH) =================
+// ================= LUCKY WHEEL (POST-MATCH 3 GAMES & IN-MATCH RISK WHEEL) =================
 function drawWheelCanvas(angle){
   const wc=$('wheelCanvas');if(!wc||!wheelSegments.length)return;
   const wg=wc.getContext('2d'),S=wc.width,cx=S/2,cy=S/2,rad=S/2-10;
@@ -1161,9 +1337,9 @@ function drawWheelCanvas(angle){
     wg.save();
     wg.rotate(a0+arc/2);
     wg.fillStyle='#fff';
-    wg.font='800 15px Inter,sans-serif';
+    wg.font='800 13px Inter,sans-serif';
     wg.textAlign='right';wg.textBaseline='middle';
-    wg.fillText(seg.short||seg.label,rad-18,0);
+    wg.fillText(seg.short||seg.label,rad-14,0);
     wg.restore();
   }
   wg.restore();
@@ -1188,17 +1364,25 @@ function closeWheelModal(){
 function openLuckyWheel(d){
   closeWheelModal();
   wheelFrozen=true;cur=null;
-  spinningRole=seat>=0?seat:-1;
+  spinningRole=typeof d.role==='number'?d.role:(seat>=0?seat:-1);
   currentWheelEventId=d.eventId;
   wheelSegments=d.segments||[];
   updatePlayerBadges();info();draw();
 
+  const isInMatch=d.mode==='in_match';
   const matchLabel=d.matchNumber||d.milestone||3;
   boardFlash('#7950f2');
-  logEvent('🎡',`Hoàn thành trận thứ ${matchLabel}: kích hoạt Vòng quay may mắn!`,'wheel');
 
-  $('wheelTitle').textContent=`🎡 Vòng quay may mắn (Hoàn thành ${matchLabel} trận)`;
-  $('wheelSub').textContent='Chúc mừng bạn đã hoàn thành chu kỳ 3 trận! Đang quay nhận thưởng…';
+  if(isInMatch){
+    logEvent('🎰',`${d.playerName} kích hoạt Item Vòng quay may rủi trong trận!`,'wheel');
+    $('wheelTitle').textContent='🎰 Vòng quay may rủi (Trong trận)';
+    $('wheelSub').textContent=`${d.playerName} đang quay tìm hiệu ứng bất ngờ cho bàn cờ…`;
+  }else{
+    logEvent('🎡',`Hoàn thành trận thứ ${matchLabel}: kích hoạt Vòng quay may mắn!`,'wheel');
+    $('wheelTitle').textContent=`🎡 Vòng quay may mắn (Hoàn thành ${matchLabel} trận)`;
+    $('wheelSub').textContent='Chúc mừng bạn đã hoàn thành chu kỳ 3 trận! Đang quay nhận thưởng…';
+  }
+
   $('wheelResultBanner').hidden=true;
   $('guessBox').hidden=true;
   $('wheelModal').hidden=false;
@@ -1207,7 +1391,7 @@ function openLuckyWheel(d){
   const targetCenter=d.targetIndex*arc+arc/2;
   const finalAngle=Math.PI*2*6+(-Math.PI/2-targetCenter);
   const startAngle=wheelAngle%(Math.PI*2);
-  const dur=Math.max(400,(d.spinDurationMs||3600)-Math.max(0,Date.now()-(d.startedAt||Date.now())));
+  const dur=Math.max(400,(d.spinDurationMs||3400)-Math.max(0,Date.now()-(d.startedAt||Date.now())));
   const t0=performance.now();
   let lastTickIdx=-1;
 
@@ -1224,7 +1408,7 @@ function openLuckyWheel(d){
       wheelAnimId=requestAnimationFrame(step);
     }else{
       snd('spinWin');
-      if(d.rewardType==='guess_swap'&&d.candidates){
+      if(!isInMatch&&d.rewardType==='guess_swap'&&d.candidates){
         showGuessStage(d);
       }
     }
@@ -1273,6 +1457,10 @@ function applyWheelResult(d){
     if(seat>=0)activeBuffs[seat]={x2:pendingX2Buff};
     updateWheelProgressUI();
   }
+  if(d.inventory){
+    myInventory={...myInventory,...d.inventory};
+    renderInventoryUI();
+  }
   if(d.newElo!=null){
     $('myElo').textContent=d.newElo;
     if(seat>=0){
@@ -1320,6 +1508,10 @@ function applyWheelResult(d){
       spawnEloFloat(1,'⚡ SWAP','swp');
     }
     logEvent('🔮',d.summaryText,'swap');
+  }else if(d.itemId){
+    snd('item');
+    boardFlash('#16a34a');
+    logEvent('🎁',d.summaryText,'item');
   }
 }
 
@@ -1375,7 +1567,9 @@ function showEloSummary(d){
   const rows=[
     ['ELO BEFORE',b.eloBefore!=null?b.eloBefore:'—',''],
     ['MATCH RESULT',fmtSign(b.matchResult||0),(b.matchResult||0)>=0?'pos':'neg'],
-    ['QUIZ BONUS',fmtSign(b.quizBonus||0),(b.quizBonus||0)>0?'pos':''],
+    ['QUIZ BONUS (3/3)',fmtSign(b.quizBonus||0),(b.quizBonus||0)>0?'pos':''],
+    ['ITEM BET (x2)',fmtSign(b.betDelta||0),(b.betDelta||0)>0?'pos':(b.betDelta||0)<0?'neg':''],
+    ['ITEM SHIELD (Bảo hộ)',b.shieldSaved?`+${b.shieldSaved} (Miễn trừ)`:'0',b.shieldSaved?'pos':''],
     ['LUCKY WHEEL BONUS (x2)',fmtSign(b.luckyWheelBonus||0),(b.luckyWheelBonus||0)>0?'pos':''],
     ['STEAL / SWAP',fmtSign(b.stealSwapTotal||0),(b.stealSwapTotal||0)>0?'pos':(b.stealSwapTotal||0)<0?'neg':''],
     ['DIVIDER'],
@@ -1421,7 +1615,7 @@ function leaveSrv(emit){
   if(!srv)return;srv=false;
   if(emit&&socket)socket.emit('leave_match');
   seat=me=-1;names[0]='Player 1';names[1]='Player 2';$('p0').value=names[0];$('p1').value=names[1];
-  [0,1].forEach(i=>$('e'+i).hidden=true);lock();
+  [0,1].forEach(i=>$('e'+i).hidden=true);lock();renderInventoryUI();
 }
 function renderLb(){
   const tb=$('lbBody');tb.replaceChildren();
@@ -1459,7 +1653,10 @@ if(socket){
     if(typeof p.wheelProgress==='number')wheelProgress=p.wheelProgress;
     if(typeof p.wheelStep==='number')wheelStep=p.wheelStep;
     pendingX2Buff=!!p.pendingX2Buff;
+    if(p.inventory)myInventory={...myInventory,...p.inventory};
+    if(p.itemCatalog)itemCatalog={...itemCatalog,...p.itemCatalog};
     updateWheelProgressUI();
+    renderInventoryUI();
     renderLb();
   });
   socket.on('stats_update',st=>{
@@ -1493,7 +1690,7 @@ if(socket){
     lock();runCount(d);
   });
 
-  // Reconnect state synchronization
+  // Đồng bộ lại trận đấu khi reconnect
   socket.on('match_sync',d=>{
     searching=false;qmsg('');
     srv=true;seat=me=d.role;
@@ -1503,8 +1700,9 @@ if(socket){
     playerElos=[d.elo[0],d.elo[1]];
     [0,1].forEach(i=>{const e=$('e'+i);e.textContent='Elo '+d.elo[i];e.hidden=false});
     activeBuffs=d.buffs||{0:{x2:false},1:{x2:false}};
+    if(d.matchEffects)matchEffects=d.matchEffects;
     moveCount=d.moveCount||0;
-    wheelFrozen=false;
+    wheelFrozen=!!d.paused;
     setPh('play');lock();
     if(d.lastStatePacket){
       try{
@@ -1521,9 +1719,80 @@ if(socket){
 
   socket.on('game_action',m=>{if(srv&&m&&typeof m=='object')handle(m)});
 
+  // Sự kiện sử dụng vật phẩm trong trận
+  socket.on('item_used',d=>{
+    if(!d)return;
+    snd('item');
+    if(d.matchEffects)matchEffects=d.matchEffects;
+    banner(d.summaryText,pc(d.role),2200);
+    logEvent(d.icon||'🎒',d.summaryText,'item');
+
+    // Người dùng vật phẩm trực tiếp thực thi biến đổi bàn cờ và đồng bộ cho đối thủ
+    if(d.role===seat){
+      if(d.itemId==='add_spot'){
+        spawnExtraSpotOnBoard(d.connections||2);
+        send({t:'item_board_sync',s:pack()});
+      }else if(d.itemId==='cut_edges'){
+        cutRandomMoveOnBoard();
+        send({t:'item_board_sync',s:pack()});
+      }
+      wake();
+    }
+    info();draw();
+  });
+
+  socket.on('item_error',d=>{
+    if(d&&d.message){snd('bad');banner(d.message,'#e03131',1800)}
+  });
+
+  // Vòng quay may rủi trong trận (Item risk_wheel)
+  socket.on('risk_wheel_start',d=>{
+    if(!d||!srv||ph!=='play')return;
+    openLuckyWheel({...d,mode:'in_match'});
+  });
+
+  socket.on('risk_wheel_complete',d=>{
+    if(!d||!srv)return;
+    $('wheelResultBanner').textContent=d.summaryText||'';
+    $('wheelResultBanner').hidden=false;
+    logEvent('🎰',d.summaryText,'wheel');
+    banner(d.summaryText,pc(d.role),2400);
+
+    setTimeout(()=>{
+      wheelFrozen=false;
+      closeWheelModal();
+
+      if(typeof d.nextTurn==='number')turn=d.nextTurn;
+
+      // Thực thi hiệu ứng lên bàn cờ phía người dùng item rồi sync cho đối thủ
+      if(d.role===seat){
+        if(d.outcomeType==='swap_nodes'){
+          swapTwoRandomSpotsOnBoard();
+          send({t:'item_board_sync',s:pack()});
+        }else if(d.outcomeType==='spawn_node'){
+          spawnExtraSpotOnBoard(2);
+          send({t:'item_board_sync',s:pack()});
+        }else if(d.outcomeType==='cut_random'){
+          cutRandomMoveOnBoard();
+          send({t:'item_board_sync',s:pack()});
+        }else if(d.outcomeType==='bonus_time'){
+          clk[d.role]=(clk[d.role]||0)+30000;
+          send({t:'item_board_sync',s:pack()});
+        }
+        wake();
+      }else if(d.outcomeType==='bonus_time'){
+        clk[d.role]=(clk[d.role]||0)+30000;
+      }
+
+      last=performance.now();
+      info();draw();
+    },1300);
+  });
+
+  // Vòng quay may mắn sau 3 trận hoàn thành
   socket.on('lucky_wheel_start',d=>{
     if(!d)return;
-    openLuckyWheel(d);
+    openLuckyWheel({...d,mode:'post_match'});
   });
   socket.on('lucky_wheel_result',d=>{
     if(!d)return;
@@ -1535,6 +1804,10 @@ if(socket){
       pendingX2Buff=!!d.pendingX2Buff;
       if(seat>=0)activeBuffs[seat]={x2:pendingX2Buff};
       updateWheelProgressUI();
+    }
+    if(d&&d.inventory){
+      myInventory={...myInventory,...d.inventory};
+      renderInventoryUI();
     }
     if(d&&d.newElo!=null){
       $('myElo').textContent=d.newElo;
@@ -1575,9 +1848,10 @@ if(socket){
     resetQuizModalUI();
     $('quizModal').hidden=false;
     $('qScore').textContent='Điểm: 0/3';
+    const winMult=d.winMultiplier||2.5;
     $('qResultBanner').textContent = d.resultType === 'win'
-      ? ('🎉 BẠN ĐÃ THẮNG! Trả lời đúng 3/3 câu để nhận thêm 150% Elo thưởng!' + (d.hasX2 ? ' (Đang có buff x2 ELO!)' : ''))
-      : '😔 BẠN ĐÃ THUA! Trả lời đúng 3/3 câu để chỉ bị trừ 0.5 Elo!';
+      ? (`🎉 BẠN ĐÃ THẮNG! Trả lời đúng 3/3 câu để nhân hệ số x${winMult} điểm thưởng!` + (d.hasX2 ? ' (Đang có buff x2 ELO!)' : ''))
+      : ('😔 BẠN ĐÃ THUA! Trả lời đúng 3/3 câu để chỉ bị trừ 50% số điểm!' + (d.hasShield ? ' (Đang có Khiên Bảo Hộ Elo!)' : ''));
     loadQuizQuestion(d.currentQuestion);
   });
 
@@ -1621,7 +1895,7 @@ $('th').onclick=()=>th(document.documentElement.dataset.theme=='dark'?'light':'d
 let t0;try{t0=localStorage.getItem('sp-theme')}catch(e){}
 th(t0||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
 setInterval(clockTick,200);
-spots=[];lines=[];hist=[];turn=0;over=false;setMute(mute);setPh('lobby');info();draw();
+spots=[];lines=[];hist=[];turn=0;over=false;setMute(mute);renderInventoryUI();setPh('lobby');info();draw();
 {const r=location.hash.match(/room=([A-Za-z0-9]{6})/);if(r){history.replaceState(null,'',location.href.split('#')[0]);$('net').open=true;joinRoom(r[1])}}
 {const m=location.hash.match(/join=([^&\s]+)/);if(m){history.replaceState(null,'',location.href.split('#')[0]);$('net').open=true;$('i').value=decodeURIComponent(m[1]);auto();$('net').scrollIntoView({block:'nearest'})}}
 </script></body></html>
