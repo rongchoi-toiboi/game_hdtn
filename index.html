@@ -70,6 +70,7 @@ textarea{display:block;width:100%;height:4.5em;margin:4px 0 10px;padding:6px 8px
 body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=lobby] #eventLogBox,body[data-ph=count] .sheet,body[data-ph=count] .bar,body[data-ph=count] #eventLogBox,body[data-ph=play] #lobby,body[data-ph=play] #net,body[data-ph=play] #lb{display:none}
 .lob{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:16px 20px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
 .lob h2{font:700 1.1rem/1.2 var(--f);margin:0}.lob p{margin:0;color:var(--mut);max-width:70ch;font-size:.9rem}.lob small{color:var(--mut);font-size:.8rem}
+.lob-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .lrow{display:flex;flex-wrap:wrap;gap:18px}.lrow label{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:.9rem}
 .rd{padding:3px 14px;font-size:.82rem;white-space:nowrap}.rd[hidden]{display:none}
 .rd.on{background:var(--c);color:var(--paper);border-color:var(--c)}
@@ -98,6 +99,22 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=lobby] #eventLo
 .lb-table th,.lb-table td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}
 .lb-table th{color:var(--mut);font-size:.8rem;text-transform:uppercase}
 .lb-table tr.me{background:color-mix(in srgb,var(--p2) 12%,transparent);font-weight:700}
+
+/* Community Stats & Lucky Wheel Progress Cards */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat-card{display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:12px;background:var(--paper);border:1px solid var(--line);transition:border-color .2s,transform .2s}
+.stat-card:hover{border-color:color-mix(in srgb,var(--ink) 35%,var(--line))}
+.stat-ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex:none;background:color-mix(in srgb,var(--p2) 12%,transparent)}
+.stat-card.online .stat-ico{background:color-mix(in srgb,var(--ok) 14%,transparent)}
+.stat-card.wheel .stat-ico{background:color-mix(in srgb,var(--purple) 14%,transparent)}
+.stat-body{display:flex;flex-direction:column;min-width:0}
+.stat-lbl{font-size:.74rem;font-weight:600;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-val{font-size:1.08rem;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.25;transition:transform .22s cubic-bezier(.2,.8,.2,1),color .22s}
+.stat-val.bump{transform:scale(1.12);color:var(--p2)}
+.stat-card.online .stat-val.bump{color:var(--ok)}
+.stat-card.wheel .stat-val.bump{color:var(--purple)}
+.online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:5px;box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent);animation:pulseOnline 2s infinite}
+@keyframes pulseOnline{0%,100%{opacity:1}50%{opacity:.45}}
 
 /* Match Event Log */
 .event-log{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
@@ -157,6 +174,9 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=lobby] #eventLo
 .elo-summary-grid .val.neg{color:var(--err)}
 .elo-summary-grid .divider{grid-column:1/-1;height:1px;background:var(--line);margin:2px 0}
 
+@media(max-width:680px){
+  .stats-grid{grid-template-columns:1fr}
+}
 @media(max-width:560px){
   body{padding:10px}
   .players{grid-template-columns:1fr}
@@ -208,10 +228,33 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=lobby] #eventLo
 </div>
 </section>
 <div id="st" role="status"></div>
-<section class="lob" id="lobby"><h2>Lobby</h2>
+<section class="lob" id="lobby"><div class="lob-head"><h2>Lobby</h2></div>
+<div class="stats-grid" aria-label="Thống kê người chơi">
+  <div class="stat-card">
+    <div class="stat-ico">👥</div>
+    <div class="stat-body">
+      <span class="stat-lbl">Tổng người tham gia</span>
+      <span class="stat-val" id="statTotalUsers">0</span>
+    </div>
+  </div>
+  <div class="stat-card online">
+    <div class="stat-ico">🟢</div>
+    <div class="stat-body">
+      <span class="stat-lbl">Đang online</span>
+      <span class="stat-val"><span class="online-dot"></span><span id="statOnlineUsers">0</span></span>
+    </div>
+  </div>
+  <div class="stat-card wheel">
+    <div class="stat-ico">🎡</div>
+    <div class="stat-body">
+      <span class="stat-lbl">Vòng quay may mắn</span>
+      <span class="stat-val" id="statWheelProgress">0/3 trận</span>
+    </div>
+  </div>
+</div>
 <div class="match-bar"><label for="pName"><b>Tên của bạn:</b></label><input type="text" id="pName" maxlength="16" autocomplete="off" placeholder="Tên hiển thị"><button id="qb" class="btn-auto" disabled>⚡ Tìm trận nhanh</button><span id="sv"></span><span class="sp"></span><span>Elo của bạn: <b id="myElo">…</b></span></div>
 <p id="qm" role="status"></p>
-<small>Tìm trận nhanh: ghép tự động qua máy chủ, 5 phút mỗi người, có tính điểm Elo và Vòng quay may mắn sau mỗi 3 lượt. Chơi qua “Play on two devices” (P2P) thì không tính Elo.</small>
+<small>Tìm trận nhanh: ghép tự động qua máy chủ, 5 phút mỗi người, có tính điểm Elo và kích hoạt Vòng quay may mắn sau mỗi 3 trận hoàn thành. Chơi qua “Play on two devices” (P2P) thì không tính Elo.</small>
 <p id="lm"></p><div class="lrow"><label>Spots <select id="n"><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label><label>Minutes per player <input id="tm" type="number" min="0" max="999" step="any" value="5" inputmode="decimal" aria-label="Minutes per player, 0 for no limit"></label><small>0 = no time limit</small></div><p>Rules lock once the match starts.</p><div id="cd" hidden></div></section>
 <section class="lob" id="lb"><h2>🏆 Bảng xếp hạng Elo (Top 10)</h2>
 <table class="lb-table"><thead><tr><th>#</th><th>Tên người chơi</th><th>Điểm Elo</th><th>Số ván</th></tr></thead><tbody id="lbBody"><tr><td colspan="4">Chưa có dữ liệu</td></tr></tbody></table>
@@ -246,7 +289,7 @@ body[data-ph=lobby] .sheet,body[data-ph=lobby] .bar,body[data-ph=lobby] #eventLo
 </details></details>
 </main>
 
-<!-- Modal Vòng quay may mắn -->
+<!-- Modal Vòng quay may mắn (Kích hoạt sau mỗi 3 trận hoàn thành) -->
 <div id="wheelModal" class="modal-backdrop" hidden>
   <div class="modal-card">
     <h2 id="wheelTitle">🎡 Vòng quay may mắn</h2>
@@ -309,7 +352,9 @@ let spots,lines,turn,over,hist,cur,dc,pc2,go=false,tout=false,lim=0,clk=[0,0],la
 const names=['Player 1','Player 2'],ptr=new Map();
 let ph='lobby',rdy=[false,false],cdt=0,rz=false,fo=false,srv=false,eloMsg='',rzA=false,ended=false,warned=false,lsec=-1,bt=0,fxr=false,mute=false,ac;
 const fx=[],MAX_FX=180;
-let moveCount=0,lastMove=null,wheelFrozen=false,activeBuffs={0:{x2:false},1:{x2:false}},spinningRole=-1,playerElos=[500,500];
+// moveCount: số lượt đi trong trận hiện tại; matchCount / wheelProgress: số trận hoàn thành để quay Lucky Wheel
+let moveCount=0,matchCount=0,wheelProgress=0,wheelStep=3,pendingX2Buff=false;
+let lastMove=null,wheelFrozen=false,activeBuffs={0:{x2:false},1:{x2:false}},spinningRole=-1,playerElos=[500,500];
 let wheelAnimId=0,wheelAngle=0,wheelSegments=[],guessTimerId=0,currentWheelEventId=null;
 let eventLog=[];
 
@@ -346,6 +391,24 @@ const snd=(k,a)=>SND[k]&&SND[k](a);
 function setMute(v){mute=v;try{localStorage.setItem('sp-mute',v?'1':'0')}catch(e){}$('mu').textContent=v?'🔇 Sound off':'🔊 Sound on'}
 function banner(t,c,ms=1100){const e=$('bn'),b=document.createElement('b');b.textContent=t;e.style.setProperty('--c',c||'');e.style.setProperty('--d',ms+'ms');e.replaceChildren(b);e.hidden=false;clearTimeout(bt);bt=setTimeout(()=>e.hidden=true,ms)}
 
+function bumpValue(el,newText){
+  if(!el)return;
+  if(el.textContent!==String(newText)){
+    el.textContent=String(newText);
+    el.classList.remove('bump');
+    void el.offsetWidth;
+    el.classList.add('bump');
+    setTimeout(()=>el.classList.remove('bump'),260);
+  }
+}
+
+function updateWheelProgressUI(){
+  const el=$('statWheelProgress');
+  if(!el)return;
+  const label=`${wheelProgress}/${wheelStep} trận`+(pendingX2Buff?' · ⚡x2':'');
+  bumpValue(el,label);
+}
+
 // Match Event Log
 function logEvent(icon,text,type='move'){
   const now=new Date(),ts=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
@@ -370,6 +433,7 @@ $('elToggle').onclick=()=>{
 
 // Floating Elo Delta & Player Card badges
 function spawnEloFloat(role,text,cls){
+  if(role<0)return;
   const anchor=$('ef'+role);
   if(!anchor)return;
   while(anchor.children.length>=4)anchor.firstElementChild.remove();
@@ -491,7 +555,9 @@ function newGame(pre){
   if(!pre)cancelSearch();
   const n=pre?pre.spots.length:+$('n').value;
   spots=[];lines=[];hist=[];over=tout=false;cur=null;rz=fo=ended=warned=false;wheelFrozen=false;
-  moveCount=0;lastMove=null;activeBuffs={0:{x2:false},1:{x2:false}};spinningRole=-1;
+  moveCount=0;lastMove=null;
+  activeBuffs=(pre&&pre.buffs)?pre.buffs:{0:{x2:false},1:{x2:false}};
+  spinningRole=-1;
   [0,1].forEach(i=>{const dp=$('dp'+i);if(dp)dp.hidden=true});
   updatePlayerBadges();clearEventLog();
   eloMsg='';lsec=-1;fx.length=0;setPh('play');
@@ -700,7 +766,7 @@ function info(){
   const b=p=>{const x=document.createElement('b');x.style.color=pc(p);x.textContent=names[p];return x};
   e.replaceChildren(...(over?(rz?[b(turn),t(' resigned. '),b(turn^1),t(' wins!')]:fo?[b(turn),t(' left the match. '),b(turn^1),t(' wins!')]:tout?[b(turn),t(' ran out of time. '),b(turn^1),t(' wins!')]:[b(turn^1),t(' wins after '+mv+' moves. '),b(turn),t(' has no move left.')])
     :ph!='play'?[t(ph=='count'?'Match begin':rdy[0]&&rdy[1]?'Starting…':rdy[0]||rdy[1]?names[rdy[0]?0:1]+' is ready. Waiting for '+names[rdy[0]?1:0]+'.':'Choose the rules, then both players press Ready.')]
-    :wheelFrozen?[t('🎡 Vòng quay may mắn đang diễn ra — đồng hồ tạm dừng…')]
+    :wheelFrozen?[t('🎡 Vòng quay may mắn đang diễn ra…')]
     :!go?[t('Choosing who moves first…')]
     :seat>=0&&turn!=seat?[t('Waiting for '),b(turn),t(' to move…')]
     :[b(turn),t((seat>=0?', your turn: ':': ')+'draw a curve between two spots, or loop one back to itself. Moves so far: '+mv+'.')]));
@@ -732,20 +798,17 @@ function draw(){
   g.setTransform(dpr,0,0,dpr,0,0);
   g.clearRect(0,0,W,H);
 
-  // Subtle paper depth vignette
   const bg=g.createRadialGradient(W/2,H/2,Math.min(W,H)*.2,W/2,H/2,Math.max(W,H)*.75);
   bg.addColorStop(0,css('--paper'));
   bg.addColorStop(1,dark?'rgba(7,13,18,.45)':'rgba(201,214,222,.28)');
   g.fillStyle=bg;
   g.fillRect(0,0,W,H);
 
-  // World transform
   g.setTransform(dpr*cam.z,0,0,dpr*cam.z,dpr*(W/2-cam.x*cam.z),dpr*(H/2-cam.y*cam.z));
   g.lineCap=g.lineJoin='round';
 
   const ink=css('--ink'),paper=css('--paper'),gridCol=css('--grid'),vx=W/2/cam.z,vy=H/2/cam.z;
 
-  // Minor grid (30px)
   if(30*cam.z>=7){
     g.save();
     g.globalAlpha=.48;
@@ -757,7 +820,6 @@ function draw(){
     g.stroke();
     g.restore();
   }
-  // Major grid (150px)
   g.save();
   g.globalAlpha=.95;
   g.lineWidth=1.45/cam.z;
@@ -768,7 +830,6 @@ function draw(){
   g.stroke();
   g.restore();
 
-  // Draw committed lines with Bézier smoothing & lastMove glow
   const lmGlow=lastMove?Math.max(0,1-(now-lastMove.t)/1800):0;
   for(let idx=0;idx<lines.length;idx++){
     const l=lines[idx];
@@ -788,7 +849,6 @@ function draw(){
     g.restore();
   }
 
-  // Active drag path & obstacle/preview feedback
   if(cur){
     const shake=cur.bad&&cur.badAt&&(now-cur.badAt<240)?Math.sin((now-cur.badAt)*.12)*2.2:0;
     g.save();
@@ -817,7 +877,6 @@ function draw(){
     }
   }
 
-  // Particle system
   for(const f of fx){
     const k=Math.min(1,(now-f.t)/f.life);
     if(f.kind==='flash')continue;
@@ -842,7 +901,6 @@ function draw(){
     g.restore();
   }
 
-  // Draw spots with 4 distinct visual states (lives = 3 - d)
   g.font='700 12px Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
   g.textAlign='center';g.textBaseline='middle';
   spots.forEach((s,i)=>{
@@ -862,7 +920,6 @@ function draw(){
       g.strokeStyle=lastMove.col;g.globalAlpha=lmGlow*.7;g.lineWidth=2;g.stroke();g.globalAlpha=1;
     }
 
-    // Ring color by remaining lives
     const ringCol=l===3?ink:l===2?(dark?'#74c0fc':'#1c7ed6'):l===1?'#f76707':ink;
     g.beginPath();g.arc(s.x,s.y,R,0,7);
     if(l>0){
@@ -873,7 +930,6 @@ function draw(){
       g.fillStyle=ink;
       g.fillText(String(l),s.x,s.y+.5);
     }else{
-      // Saturated / locked spot visual
       g.fillStyle=dark?'#273d4a':'#344652';g.fill();
       g.lineWidth=2.5;g.strokeStyle=ink;g.stroke();
       g.strokeStyle=paper;g.lineWidth=1.8;
@@ -883,7 +939,6 @@ function draw(){
       g.stroke();
     }
 
-    // Valid move preview pill
     if(isPrev){
       const afterLives=l-(i===cur.s?2:1);
       const label=afterLives>0?`→ ${afterLives} lượt`:'→ Khóa';
@@ -899,7 +954,6 @@ function draw(){
     }
   });
 
-  // Screen-space flash & subtle board inner frame
   g.setTransform(dpr,0,0,dpr,0,0);
   for(const f of fx){
     if(f.kind!=='flash')continue;
@@ -1089,7 +1143,7 @@ $('rcpy').onclick=()=>flash($('rcpy'),room,$('rcode'));
 $('rlnk').onclick=()=>flash($('rlnk'),roomLink());
 $('rshr').onclick=async()=>{try{await navigator.share(canLink?{title:'Sprouts',text:'Join my Sprouts game:',url:roomLink()}:{text:'Join my Sprouts game. Room code: '+room})}catch(e){}};
 
-// ================= LUCKY WHEEL UI & ANIMATION =================
+// ================= LUCKY WHEEL UI & ANIMATION (3 TRẬN HOÀN THÀNH) =================
 function drawWheelCanvas(angle){
   const wc=$('wheelCanvas');if(!wc||!wheelSegments.length)return;
   const wg=wc.getContext('2d'),S=wc.width,cx=S/2,cy=S/2,rad=S/2-10;
@@ -1113,7 +1167,6 @@ function drawWheelCanvas(angle){
     wg.restore();
   }
   wg.restore();
-  // Center hub
   wg.beginPath();wg.arc(cx,cy,22,0,Math.PI*2);
   wg.fillStyle='#fff';wg.fill();
   wg.lineWidth=4;wg.strokeStyle='#1c2b36';wg.stroke();
@@ -1135,24 +1188,22 @@ function closeWheelModal(){
 function openLuckyWheel(d){
   closeWheelModal();
   wheelFrozen=true;cur=null;
-  spinningRole=d.spinnerRole;
+  spinningRole=seat>=0?seat:-1;
   currentWheelEventId=d.eventId;
   wheelSegments=d.segments||[];
   updatePlayerBadges();info();draw();
 
+  const matchLabel=d.matchNumber||d.milestone||3;
   boardFlash('#7950f2');
-  logEvent('🎡',`Mốc ${d.milestone} lượt: ${d.spinnerName} kích hoạt Vòng quay may mắn!`,'wheel');
+  logEvent('🎡',`Hoàn thành trận thứ ${matchLabel}: kích hoạt Vòng quay may mắn!`,'wheel');
 
-  $('wheelTitle').textContent=`🎡 Vòng quay may mắn (Lượt ${d.milestone})`;
-  $('wheelSub').textContent=d.spinnerRole===seat
-    ?'Bạn đang quay! Chờ vòng quay dừng để nhận phần thưởng…'
-    :`${d.spinnerName} đang quay vòng quay may mắn…`;
+  $('wheelTitle').textContent=`🎡 Vòng quay may mắn (Hoàn thành ${matchLabel} trận)`;
+  $('wheelSub').textContent='Chúc mừng bạn đã hoàn thành chu kỳ 3 trận! Đang quay nhận thưởng…';
   $('wheelResultBanner').hidden=true;
   $('guessBox').hidden=true;
   $('wheelModal').hidden=false;
 
   const n=wheelSegments.length||6,arc=Math.PI*2/n;
-  // Pointer is at top (-PI/2). Align center of targetIndex with -PI/2.
   const targetCenter=d.targetIndex*arc+arc/2;
   const finalAngle=Math.PI*2*6+(-Math.PI/2-targetCenter);
   const startAngle=wheelAngle%(Math.PI*2);
@@ -1182,11 +1233,8 @@ function openLuckyWheel(d){
 }
 
 function showGuessStage(d){
-  const isSpinner=d.spinnerRole===seat;
   $('guessBox').hidden=false;
-  $('wheelSub').textContent=isSpinner
-    ?'🔮 Chọn người bạn tin là có điểm Elo CAO NHẤT để hoán đổi Elo với đối thủ!'
-    :`🔮 ${d.spinnerName} đang đoán người có Elo cao nhất…`;
+  $('wheelSub').textContent='🔮 Chọn người bạn tin là có điểm Elo CAO NHẤT để hoán đổi Elo với đối thủ!';
 
   const wrap=$('guessCards');wrap.replaceChildren();
   (d.candidates||[]).forEach(c=>{
@@ -1194,18 +1242,15 @@ function showGuessStage(d){
     btn.type='button';
     btn.className='guess-card';
     btn.dataset.cid=c.id;
-    btn.disabled=!isSpinner;
     const nm=document.createElement('span');nm.className='guess-name';nm.textContent=c.name;
     const tg=document.createElement('span');tg.className='guess-tag';tg.textContent=c.isBot?'BOT / VIRTUAL':'PLAYER';
     const el=document.createElement('span');el.className='guess-elo';el.textContent='??? ELO';
     btn.append(nm,tg,el);
-    if(isSpinner){
-      btn.onclick=()=>{
-        wrap.querySelectorAll('.guess-card').forEach(b=>b.disabled=true);
-        btn.classList.add('picked');
-        socket.emit('lucky_wheel_guess',{eventId:d.eventId,candidateId:c.id});
-      };
-    }
+    btn.onclick=()=>{
+      wrap.querySelectorAll('.guess-card').forEach(b=>b.disabled=true);
+      btn.classList.add('picked');
+      socket.emit('lucky_wheel_guess',{eventId:d.eventId,candidateId:c.id});
+    };
     wrap.appendChild(btn);
   });
 
@@ -1223,10 +1268,18 @@ function showGuessStage(d){
 function applyWheelResult(d){
   if(!d)return;
   clearInterval(guessTimerId);
-  activeBuffs=d.buffs||activeBuffs;
-  if(Array.isArray(d.elo)&&d.elo.length===2){
-    playerElos=[d.elo[0],d.elo[1]];
-    [0,1].forEach(i=>{const el=$('e'+i);if(el){el.textContent='Elo '+d.elo[i];el.hidden=false}});
+  if(d.pendingX2Buff!=null){
+    pendingX2Buff=!!d.pendingX2Buff;
+    if(seat>=0)activeBuffs[seat]={x2:pendingX2Buff};
+    updateWheelProgressUI();
+  }
+  if(d.newElo!=null){
+    $('myElo').textContent=d.newElo;
+    if(seat>=0){
+      playerElos[seat]=d.newElo;
+      const el=$('e'+seat);
+      if(el){el.textContent='Elo '+d.newElo;el.hidden=false}
+    }
   }
   updatePlayerBadges();
 
@@ -1235,15 +1288,15 @@ function applyWheelResult(d){
   ban.hidden=false;
 
   if(d.rewardType==='x2'){
-    spawnEloFloat(d.spinnerRole,'x2 ELO','buff');
+    if(seat>=0)spawnEloFloat(seat,'x2 ELO','buff');
     boardFlash('#f59f00');
     logEvent('⚡',d.summaryText,'wheel');
   }else if(d.rewardType==='steal'){
     snd('steal');
     boardFlash('#e03131');
-    if(d.stolenAmount>0){
-      spawnEloFloat(d.spinnerRole,`+${d.stolenAmount} ELO`,'pos');
-      spawnEloFloat(d.spinnerRole^1,`-${d.stolenAmount} ELO`,'neg');
+    if(d.stolenAmount>0&&seat>=0){
+      spawnEloFloat(seat,`+${d.stolenAmount} ELO`,'pos');
+      spawnEloFloat(seat^1,`-${d.stolenAmount} ELO`,'neg');
     }
     logEvent('💰',d.summaryText,'steal');
   }else if(d.rewardType==='guess_swap'&&d.guessResult){
@@ -1399,7 +1452,28 @@ if(socket){
     }
     qmUI();
   });
-  socket.on('profile',p=>{myPub=p.pub;$('myElo').textContent=p.elo;renderLb()});
+  socket.on('profile',p=>{
+    myPub=p.pub;
+    $('myElo').textContent=p.elo;
+    if(typeof p.completedMatches==='number')matchCount=p.completedMatches;
+    if(typeof p.wheelProgress==='number')wheelProgress=p.wheelProgress;
+    if(typeof p.wheelStep==='number')wheelStep=p.wheelStep;
+    pendingX2Buff=!!p.pendingX2Buff;
+    updateWheelProgressUI();
+    renderLb();
+  });
+  socket.on('stats_update',st=>{
+    if(!st||typeof st!=='object')return;
+    if(typeof st.totalParticipants==='number')bumpValue($('statTotalUsers'),st.totalParticipants);
+    if(typeof st.onlineCount==='number')bumpValue($('statOnlineUsers'),st.onlineCount);
+  });
+  socket.on('match_progress_update',mp=>{
+    if(!mp)return;
+    if(typeof mp.completedMatches==='number')matchCount=mp.completedMatches;
+    if(typeof mp.wheelProgress==='number')wheelProgress=mp.wheelProgress;
+    if(typeof mp.wheelStep==='number')wheelStep=mp.wheelStep;
+    updateWheelProgressUI();
+  });
   socket.on('name_result',res=>{if(!res.success)alert(res.message);});
   socket.on('leaderboard_update',d=>{lbData=Array.isArray(d)?d:[];renderLb()});
   socket.on('waiting_for_match',()=>qmsg('⏳ Đang chờ người chơi khác…'));
@@ -1430,7 +1504,7 @@ if(socket){
     [0,1].forEach(i=>{const e=$('e'+i);e.textContent='Elo '+d.elo[i];e.hidden=false});
     activeBuffs=d.buffs||{0:{x2:false},1:{x2:false}};
     moveCount=d.moveCount||0;
-    wheelFrozen=!!d.paused;
+    wheelFrozen=false;
     setPh('play');lock();
     if(d.lastStatePacket){
       try{
@@ -1441,16 +1515,6 @@ if(socket){
       spots=d.spots.map(p=>({x:p.x,y:p.y,d:0}));lines=[];turn=d.turn;over=false;lim=d.tm*60000;clk=[lim,lim];
     }
     go=true;last=performance.now();
-    if(d.activeWheel){
-      if(d.activeWheel.processed&&d.activeWheel.resultPayload){
-        $('wheelModal').hidden=false;
-        applyWheelResult(d.activeWheel.resultPayload);
-      }else{
-        openLuckyWheel(d.activeWheel);
-      }
-    }else{
-      closeWheelModal();
-    }
     logEvent('🔄','Đã đồng bộ lại trạng thái trận đấu sau khi kết nối lại.','move');
     info();draw();
   });
@@ -1458,20 +1522,27 @@ if(socket){
   socket.on('game_action',m=>{if(srv&&m&&typeof m=='object')handle(m)});
 
   socket.on('lucky_wheel_start',d=>{
-    if(!srv||ph!=='play'||over)return;
+    if(!d)return;
     openLuckyWheel(d);
   });
   socket.on('lucky_wheel_result',d=>{
-    if(!srv)return;
+    if(!d)return;
     applyWheelResult(d);
   });
   socket.on('lucky_wheel_complete',d=>{
-    if(!srv)return;
     wheelFrozen=false;
-    activeBuffs=(d&&d.buffs)||activeBuffs;
-    if(d&&Array.isArray(d.elo)&&d.elo.length===2){
-      playerElos=[d.elo[0],d.elo[1]];
-      [0,1].forEach(i=>{const el=$('e'+i);if(el){el.textContent='Elo '+d.elo[i];el.hidden=false}});
+    if(d&&d.pendingX2Buff!=null){
+      pendingX2Buff=!!d.pendingX2Buff;
+      if(seat>=0)activeBuffs[seat]={x2:pendingX2Buff};
+      updateWheelProgressUI();
+    }
+    if(d&&d.newElo!=null){
+      $('myElo').textContent=d.newElo;
+      if(seat>=0){
+        playerElos[seat]=d.newElo;
+        const el=$('e'+seat);
+        if(el){el.textContent='Elo '+d.newElo;el.hidden=false}
+      }
     }
     closeWheelModal();
     last=performance.now();
@@ -1483,7 +1554,7 @@ if(socket){
 
   socket.on('match_ended', d => {
     if (!srv || ph !== 'play') return;
-    wheelFrozen=false;closeWheelModal();
+    wheelFrozen=false;
     if (!over) {
       over = true;
       turn = d.winner ^ 1;
@@ -1540,7 +1611,7 @@ if(socket){
 
   socket.on('opponent_left',()=>{
     if(!srv)return;
-    wheelFrozen=false;closeWheelModal();
+    wheelFrozen=false;
     if(ph=='play'&&!over){fo=true;over=true;turn=seat^1;tout=rz=false;cur=null;lt++;$('lot').hidden=true;go=true;info();draw()}
     else if(ph=='count'){leaveSrv(false);toLobby();qmsg('Đối thủ đã rời.')}
   });
