@@ -13,7 +13,7 @@ const MATCH_MINUTES = 5;
 const PID_RE = /^[A-Za-z0-9_-]{8,64}$/;
 
 // Lucky Wheel & Reconnect constants
-const WHEEL_MILESTONE_STEP = 3;
+const WHEEL_MATCH_STEP = 3; // Kích hoạt sau mỗi 3 trận hoàn thành
 const WHEEL_SPIN_DURATION_MS = 3600;
 const GUESS_TIMEOUT = 10000;
 const WHEEL_RESULT_HOLD_MS = 2400;
@@ -82,14 +82,16 @@ try {
 }
 if (questionsBank.length < 3) questionsBank = FALLBACK_QUESTIONS;
 
-const ratings = new Map();
-const usernames = new Map();
+// Lưu trữ dữ liệu định danh theo PID (tránh đếm trùng khi F5/reconnect/nhiều tab)
+const ratings = new Map();           // pid -> { pub, name, elo, games, wins, completedMatches, wheelProgress, pendingX2Buff, countedRooms: Set }
+const usernames = new Map();         // lowerName -> pid
 let waitingPlayer = null;
-let rooms = {};          // socketId -> room
-const roomsById = new Map(); // roomId -> room
-const pidToRoom = new Map(); // pid -> roomId (for active match reconnect)
-let users = {};          // socketId -> { pid }
-let quizSessions = {};   // sessionId -> session
+let rooms = {};                      // socketId -> room
+const roomsById = new Map();         // roomId -> room
+const pidToRoom = new Map();         // pid -> roomId
+const pidToActiveWheel = new Map();  // pid -> wheelState (Post-match Lucky Wheel)
+let users = {};                      // socketId -> { pid }
+let quizSessions = {};               // sessionId -> session
 
 const cleanName = (x) => String(x == null ? '' : x).replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 16);
 const roundElo = (v) => Math.max(0, Number(Number(v).toFixed(1)));
@@ -98,6 +100,22 @@ function isUsernameTaken(name, currentPid) {
   const norm = name.toLowerCase();
   return usernames.has(norm) && usernames.get(norm) !== currentPid;
 }
+
+function getSystemStats() {
+  const onlinePids = new Set();
+  for (const sid of Object.keys(users)) {
+    const sock = io.sockets.sockets.get(sid);
+    if (sock && sock.connected && users[sid] && users[sid].pid) {
+      onlinePids.add(users[sid].pid);
+    }
+  }
+  return {
+    totalParticipants: ratings.size,
+    onlineCount: onlinePids.size
+  };
+}
+
+const broadcastSystemStats = () => io.emit('stats_update', getSystemStats());
 
 function identify(socket, data) {
   const d = data && typeof data === 'object' ? data : {};
@@ -110,7 +128,17 @@ function identify(socket, data) {
   if (!rec) {
     let baseName = cleanName(d.name) || 'Player_' + crypto.randomBytes(2).toString('hex');
     while (isUsernameTaken(baseName, u.pid)) baseName = 'Player_' + crypto.randomBytes(2).toString('hex');
-    rec = { pub: crypto.randomBytes(4).toString('hex'), name: baseName, elo: START_ELO, games: 0, wins: 0 };
+    rec = {
+      pub: crypto.randomBytes(4).toString('hex'),
+      name: baseName,
+      elo: START_ELO,
+      games: 0,
+      wins: 0,
+      completedMatches: 0, // Tổng số trận hoàn thành dùng cho thống kê
+      wheelProgress: 0,    // Tiến trình chu kỳ 3 trận (0 -> 1 -> 2 -> kích hoạt ở 3 và reset về 0)
+      pendingX2Buff: false,
+      countedRooms: new Set()
+    };
     ratings.set(u.pid, rec);
     usernames.set(baseName.toLowerCase(), u.pid);
   } else if (d.name !== undefined) {
@@ -132,7 +160,27 @@ function identify(socket, data) {
 
 const recOf = (socketId) => (users[socketId] ? ratings.get(users[socketId].pid) : null);
 const recByPid = (pid) => (pid ? ratings.get(pid) : null);
-const profileOf = (rec) => ({ pub: rec.pub, name: rec.name, elo: rec.elo, games: rec.games });
+const profileOf = (rec) => ({
+  pub: rec.pub,
+  name: rec.name,
+  elo: rec.elo,
+  games: rec.games,
+  completedMatches: rec.completedMatches,
+  wheelProgress: rec.wheelProgress,
+  wheelStep: WHEEL_MATCH_STEP,
+  pendingX2Buff: !!rec.pendingX2Buff
+});
+
+function getSocketByPid(pid) {
+  if (!pid) return null;
+  for (const [sid, u] of Object.entries(users)) {
+    if (u && u.pid === pid) {
+      const s = io.sockets.sockets.get(sid);
+      if (s && s.connected) return s;
+    }
+  }
+  return null;
+}
 
 function getLeaderboard() {
   const online = new Set(Object.values(users).map((u) => u.pid));
@@ -163,19 +211,22 @@ function getRoomRole(room, socketId) {
 
 function getRoomSocket(room, role) {
   const sid = role === 0 ? room.p1 : room.p2;
-  return sid ? io.sockets.sockets.get(sid) : null;
+  const s = sid ? io.sockets.sockets.get(sid) : null;
+  if (s && s.connected) return s;
+  const pid = role === 0 ? room.p1Pid : room.p2Pid;
+  return getSocketByPid(pid);
 }
 
 function getRoomRec(room, role) {
   return recByPid(role === 0 ? room.p1Pid : room.p2Pid);
 }
 
-function clearWheelTimers(room) {
-  if (!room || !room.activeWheel) return;
-  if (room.activeWheel.resolveTimer) clearTimeout(room.activeWheel.resolveTimer);
-  if (room.activeWheel.completeTimer) clearTimeout(room.activeWheel.completeTimer);
-  room.activeWheel.resolveTimer = null;
-  room.activeWheel.completeTimer = null;
+function clearWheelTimers(wheel) {
+  if (!wheel) return;
+  if (wheel.resolveTimer) clearTimeout(wheel.resolveTimer);
+  if (wheel.completeTimer) clearTimeout(wheel.completeTimer);
+  wheel.resolveTimer = null;
+  wheel.completeTimer = null;
 }
 
 function clearDisconnectTimers(room) {
@@ -190,7 +241,6 @@ function clearDisconnectTimers(room) {
 
 function cleanupRoomRefs(room) {
   if (!room) return;
-  clearWheelTimers(room);
   clearDisconnectTimers(room);
   if (rooms[room.p1] === room) delete rooms[room.p1];
   if (rooms[room.p2] === room) delete rooms[room.p2];
@@ -246,15 +296,26 @@ function buildGuessCandidates(spinnerPid) {
   return candidates.sort(() => Math.random() - 0.5);
 }
 
-function triggerLuckyWheel(room, spinnerRole, milestone) {
-  if (!room || room.finished || room.paused) return;
-  if (room.triggeredMilestones.has(milestone)) return;
+/**
+ * Kích hoạt Vòng quay may mắn sau khi người chơi hoàn thành đủ 3 trận đấu.
+ * Chạy riêng cho người chơi đạt mốc 3 trận, sau đó chuyển sang Quiz tổng kết trận.
+ */
+function triggerPostMatchLuckyWheel(spinnerPid, opponentPid, matchNumber, onWheelFinished) {
+  const spinnerRec = recByPid(spinnerPid);
+  const oppRec = recByPid(opponentPid);
+  const spinnerSock = getSocketByPid(spinnerPid);
 
-  const spinnerRec = getRoomRec(room, spinnerRole);
-  if (!spinnerRec) return;
+  if (!spinnerRec || !spinnerSock || !spinnerSock.connected) {
+    if (typeof onWheelFinished === 'function') onWheelFinished();
+    return;
+  }
 
-  room.triggeredMilestones.add(milestone);
-  room.paused = true;
+  // Hủy wheel cũ nếu đang kẹt
+  const existing = pidToActiveWheel.get(spinnerPid);
+  if (existing) {
+    clearWheelTimers(existing);
+    pidToActiveWheel.delete(spinnerPid);
+  }
 
   const targetIndex = Math.floor(Math.random() * WHEEL_SEGMENTS.length);
   const selectedSeg = WHEEL_SEGMENTS[targetIndex];
@@ -264,7 +325,6 @@ function triggerLuckyWheel(room, spinnerRole, milestone) {
   let candidates = null;
   let publicCandidates = null;
   if (rewardType === 'guess_swap') {
-    const spinnerPid = spinnerRole === 0 ? room.p1Pid : room.p2Pid;
     candidates = buildGuessCandidates(spinnerPid);
     publicCandidates = candidates.map((c) => ({
       id: c.id,
@@ -276,10 +336,10 @@ function triggerLuckyWheel(room, spinnerRole, milestone) {
   const startedAt = Date.now();
   const wheelState = {
     eventId,
-    matchId: room.id,
-    spinnerRole,
+    spinnerPid,
+    opponentPid,
     spinnerName: spinnerRec.name,
-    milestone,
+    matchNumber,
     targetIndex,
     rewardType,
     candidates,
@@ -293,17 +353,18 @@ function triggerLuckyWheel(room, spinnerRole, milestone) {
     processed: false,
     resultPayload: null,
     resolveTimer: null,
-    completeTimer: null
+    completeTimer: null,
+    onComplete: onWheelFinished
   };
 
-  room.activeWheel = wheelState;
+  pidToActiveWheel.set(spinnerPid, wheelState);
 
-  io.to(room.id).emit('lucky_wheel_start', {
-    matchId: room.id,
+  spinnerSock.emit('lucky_wheel_start', {
     eventId,
-    spinnerRole,
+    spinnerPid,
     spinnerName: spinnerRec.name,
-    milestone,
+    matchNumber,
+    milestone: matchNumber,
     segments: WHEEL_SEGMENTS,
     targetIndex,
     rewardType,
@@ -315,21 +376,21 @@ function triggerLuckyWheel(room, spinnerRole, milestone) {
 
   if (rewardType === 'guess_swap') {
     wheelState.resolveTimer = setTimeout(() => {
-      if (!room.activeWheel || room.activeWheel.eventId !== eventId || room.activeWheel.processed) return;
+      const curW = pidToActiveWheel.get(spinnerPid);
+      if (!curW || curW.eventId !== eventId || curW.processed) return;
       const randomPick = candidates[Math.floor(Math.random() * candidates.length)];
-      resolveLuckyWheel(room, eventId, randomPick ? randomPick.id : null, true);
+      resolvePostMatchLuckyWheel(spinnerPid, eventId, randomPick ? randomPick.id : null, true);
     }, WHEEL_SPIN_DURATION_MS + GUESS_TIMEOUT);
   } else {
     wheelState.resolveTimer = setTimeout(() => {
-      resolveLuckyWheel(room, eventId, null, false);
+      resolvePostMatchLuckyWheel(spinnerPid, eventId, null, false);
     }, WHEEL_SPIN_DURATION_MS);
   }
 }
 
-function resolveLuckyWheel(room, eventId, chosenId, timedOut) {
-  if (!room || room.finished || !room.activeWheel) return;
-  const wheel = room.activeWheel;
-  if (wheel.eventId !== eventId || wheel.processed) return;
+function resolvePostMatchLuckyWheel(spinnerPid, eventId, chosenId, timedOut) {
+  const wheel = pidToActiveWheel.get(spinnerPid);
+  if (!wheel || wheel.eventId !== eventId || wheel.processed) return;
 
   wheel.processed = true;
   if (wheel.resolveTimer) {
@@ -337,57 +398,58 @@ function resolveLuckyWheel(room, eventId, chosenId, timedOut) {
     wheel.resolveTimer = null;
   }
 
-  const spinnerRole = wheel.spinnerRole;
-  const oppRole = spinnerRole ^ 1;
-  const spinnerRec = getRoomRec(room, spinnerRole);
-  const oppRec = getRoomRec(room, oppRole);
-  if (!spinnerRec || !oppRec) {
-    finishLuckyWheel(room, eventId);
+  const spinnerRec = recByPid(spinnerPid);
+  const oppRec = recByPid(wheel.opponentPid);
+  if (!spinnerRec) {
+    finishPostMatchLuckyWheel(spinnerPid, eventId);
     return;
   }
 
   let stolenAmount = 0;
   let swapped = false;
-  let eloDeltas = [0, 0];
   let guessResult = null;
   let summaryText = '';
 
   if (wheel.rewardType === 'x2') {
-    room.buffs[spinnerRole].x2 = true;
-    summaryText = `${spinnerRec.name} nhận buff x2 ELO cho phần thưởng dương cuối trận!`;
+    spinnerRec.pendingX2Buff = true;
+    summaryText = `${spinnerRec.name} nhận buff x2 ELO cho phần thưởng dương!`;
   } else if (wheel.rewardType === 'steal') {
-    const rawStolen = Math.max(1, Math.round(oppRec.elo * 0.05));
-    stolenAmount = Math.min(rawStolen, oppRec.elo);
-    if (stolenAmount > 0) {
-      oppRec.elo = roundElo(oppRec.elo - stolenAmount);
-      spinnerRec.elo = roundElo(spinnerRec.elo + stolenAmount);
-      room.eloLedger[spinnerRole].stolen = Number((room.eloLedger[spinnerRole].stolen + stolenAmount).toFixed(1));
-      room.eloLedger[oppRole].stolen = Number((room.eloLedger[oppRole].stolen - stolenAmount).toFixed(1));
-      eloDeltas[spinnerRole] = stolenAmount;
-      eloDeltas[oppRole] = -stolenAmount;
-      syncProfilesAndLeaderboard(room);
+    if (oppRec && oppRec.elo > 0) {
+      const rawStolen = Math.max(1, Math.round(oppRec.elo * 0.05));
+      stolenAmount = Math.min(rawStolen, oppRec.elo);
+      if (stolenAmount > 0) {
+        oppRec.elo = roundElo(oppRec.elo - stolenAmount);
+        spinnerRec.elo = roundElo(spinnerRec.elo + stolenAmount);
+        const oppSock = getSocketByPid(wheel.opponentPid);
+        if (oppSock) oppSock.emit('profile', profileOf(oppRec));
+        broadcastLeaderboard();
+      }
+      summaryText = `${spinnerRec.name} cướp thành công ${stolenAmount} ELO từ ${oppRec.name}!`;
+    } else {
+      const bonus = 15;
+      spinnerRec.elo = roundElo(spinnerRec.elo + bonus);
+      stolenAmount = bonus;
+      broadcastLeaderboard();
+      summaryText = `${spinnerRec.name} nhận được +${bonus} ELO may mắn!`;
     }
-    summaryText = `${spinnerRec.name} cướp thành công ${stolenAmount} ELO từ ${oppRec.name}!`;
   } else if (wheel.rewardType === 'guess_swap') {
     const cands = wheel.candidates || [];
     const maxElo = cands.length ? Math.max(...cands.map((c) => c.elo)) : 0;
     const chosen = cands.find((c) => c.id === chosenId) || cands[0] || null;
     const isCorrect = !!chosen && chosen.elo === maxElo;
 
-    if (isCorrect && !oppRec.isBot) {
+    if (isCorrect && oppRec) {
       const oldSpinnerElo = spinnerRec.elo;
       const oldOppElo = oppRec.elo;
       spinnerRec.elo = oldOppElo;
       oppRec.elo = oldSpinnerElo;
-      const sDelta = Number((oldOppElo - oldSpinnerElo).toFixed(1));
-      const oDelta = Number((oldSpinnerElo - oldOppElo).toFixed(1));
-      room.eloLedger[spinnerRole].swap = Number((room.eloLedger[spinnerRole].swap + sDelta).toFixed(1));
-      room.eloLedger[oppRole].swap = Number((room.eloLedger[oppRole].swap + oDelta).toFixed(1));
-      eloDeltas[spinnerRole] = sDelta;
-      eloDeltas[oppRole] = oDelta;
       swapped = true;
-      syncProfilesAndLeaderboard(room);
+      const oppSock = getSocketByPid(wheel.opponentPid);
+      if (oppSock) oppSock.emit('profile', profileOf(oppRec));
+      broadcastLeaderboard();
       summaryText = `${spinnerRec.name} đoán ĐÚNG người có Elo cao nhất và HOÁN ĐỔI Elo với ${oppRec.name}!`;
+    } else if (isCorrect) {
+      summaryText = `${spinnerRec.name} đoán ĐÚNG nhưng không có đối thủ hợp lệ để hoán đổi.`;
     } else {
       summaryText = `${spinnerRec.name} đoán SAI — không có hoán đổi Elo nào xảy ra.`;
     }
@@ -408,80 +470,66 @@ function resolveLuckyWheel(room, eventId, chosenId, timedOut) {
     };
   }
 
-  const r1 = getRoomRec(room, 0);
-  const r2 = getRoomRec(room, 1);
-  const resumeInMs = wheel.rewardType === 'guess_swap' ? WHEEL_GUESS_RESULT_HOLD_MS : WHEEL_RESULT_HOLD_MS;
+  const spinnerSock = getSocketByPid(spinnerPid);
+  if (spinnerSock) spinnerSock.emit('profile', profileOf(spinnerRec));
 
+  const resumeInMs = wheel.rewardType === 'guess_swap' ? WHEEL_GUESS_RESULT_HOLD_MS : WHEEL_RESULT_HOLD_MS;
   const resultPayload = {
-    matchId: room.id,
     eventId,
-    spinnerRole,
+    spinnerPid,
     spinnerName: spinnerRec.name,
     rewardType: wheel.rewardType,
     stolenAmount,
     swapped,
-    eloDeltas,
-    buffs: {
-      0: { ...room.buffs[0] },
-      1: { ...room.buffs[1] }
-    },
-    elo: [r1 ? r1.elo : START_ELO, r2 ? r2.elo : START_ELO],
+    newElo: spinnerRec.elo,
+    pendingX2Buff: !!spinnerRec.pendingX2Buff,
     guessResult,
     summaryText,
     resumeInMs
   };
 
   wheel.resultPayload = resultPayload;
-  io.to(room.id).emit('lucky_wheel_result', resultPayload);
+  if (spinnerSock) spinnerSock.emit('lucky_wheel_result', resultPayload);
 
   wheel.completeTimer = setTimeout(() => {
-    finishLuckyWheel(room, eventId);
+    finishPostMatchLuckyWheel(spinnerPid, eventId);
   }, resumeInMs);
 }
 
-function finishLuckyWheel(room, eventId) {
-  if (!room || !room.activeWheel || room.activeWheel.eventId !== eventId) return;
-  clearWheelTimers(room);
-  room.activeWheel = null;
-  room.paused = false;
+function finishPostMatchLuckyWheel(spinnerPid, eventId) {
+  const wheel = pidToActiveWheel.get(spinnerPid);
+  if (!wheel || wheel.eventId !== eventId) return;
+  clearWheelTimers(wheel);
+  pidToActiveWheel.delete(spinnerPid);
 
-  const r1 = getRoomRec(room, 0);
-  const r2 = getRoomRec(room, 1);
-  io.to(room.id).emit('lucky_wheel_complete', {
-    matchId: room.id,
-    eventId,
-    paused: false,
-    elo: [r1 ? r1.elo : START_ELO, r2 ? r2.elo : START_ELO],
-    buffs: {
-      0: { ...room.buffs[0] },
-      1: { ...room.buffs[1] }
-    }
-  });
+  const spinnerRec = recByPid(spinnerPid);
+  const spinnerSock = getSocketByPid(spinnerPid);
+  if (spinnerSock) {
+    spinnerSock.emit('lucky_wheel_complete', {
+      eventId,
+      newElo: spinnerRec ? spinnerRec.elo : START_ELO,
+      pendingX2Buff: spinnerRec ? !!spinnerRec.pendingX2Buff : false
+    });
+    if (spinnerRec) spinnerSock.emit('profile', profileOf(spinnerRec));
+  }
+
+  if (typeof wheel.onComplete === 'function') {
+    wheel.onComplete();
+  }
 }
 
-function syncProfilesAndLeaderboard(room) {
-  [0, 1].forEach((r) => {
-    const s = getRoomSocket(room, r);
-    const rec = getRoomRec(room, r);
-    if (s && rec) s.emit('profile', profileOf(rec));
-  });
-  broadcastLeaderboard();
-}
-
-function startQuizSession(room, role, resultType, baseGain, baseLoss) {
-  const socketId = role === 0 ? room.p1 : room.p2;
+function startQuizSession(room, role, resultType, baseGain, baseLoss, eloBeforeMatch) {
   const pid = role === 0 ? room.p1Pid : room.p2Pid;
   const playerRec = recByPid(pid);
   if (!playerRec) return;
 
-  const hasX2 = !!(room.buffs && room.buffs[role] && room.buffs[role].x2);
-  const eloBefore = room.eloBefore[role];
-  const midMatchSteal = room.eloLedger[role].stolen;
-  const midMatchSwap = room.eloLedger[role].swap;
+  const hasX2 = !!playerRec.pendingX2Buff;
+  const eloBefore = eloBeforeMatch != null ? eloBeforeMatch : room.eloBefore[role];
+  const wheelDelta = Number((playerRec.elo - eloBefore).toFixed(1));
 
-  const socket = io.sockets.sockets.get(socketId);
+  const socket = getRoomSocket(room, role);
   if (!socket || !socket.connected) {
-    // Player disconnected before quiz: settle base Elo immediately
+    // Người chơi đã thoát trước Quiz: tính điểm Elo trận đấu ngay lập tức
     if (resultType === 'win') {
       const x2Bonus = hasX2 ? baseGain : 0;
       playerRec.elo = roundElo(playerRec.elo + baseGain + x2Bonus);
@@ -491,6 +539,7 @@ function startQuizSession(room, role, resultType, baseGain, baseLoss) {
       playerRec.elo = roundElo(playerRec.elo - baseLoss);
       playerRec.games++;
     }
+    if (hasX2) playerRec.pendingX2Buff = false;
     broadcastLeaderboard();
     return;
   }
@@ -504,7 +553,7 @@ function startQuizSession(room, role, resultType, baseGain, baseLoss) {
   const sessionId = crypto.randomBytes(16).toString('hex');
 
   quizSessions[sessionId] = {
-    socketId,
+    socketId: socket.id,
     pid,
     role,
     questions: selected,
@@ -516,8 +565,7 @@ function startQuizSession(room, role, resultType, baseGain, baseLoss) {
     baseLoss,
     hasX2,
     eloBefore,
-    midMatchSteal,
-    midMatchSwap,
+    wheelDelta,
     completed: false
   };
 
@@ -530,11 +578,51 @@ function startQuizSession(room, role, resultType, baseGain, baseLoss) {
   });
 }
 
+/**
+ * Ghi nhận hoàn thành 1 trận đấu cho người chơi theo PID.
+ * Chống tính trùng nhiều lần cùng một room.id.
+ * Trả về { counted, completedMatches, wheelProgress, triggeredWheel }.
+ */
+function recordPlayerMatchCompletion(pid, roomId) {
+  const rec = recByPid(pid);
+  if (!rec || !roomId) {
+    return { counted: false, completedMatches: 0, wheelProgress: 0, triggeredWheel: false };
+  }
+  if (!rec.countedRooms) rec.countedRooms = new Set();
+
+  // Chống đếm trùng cùng một trận đấu (do lặp event, reconnect, socket glitch...)
+  if (rec.countedRooms.has(roomId)) {
+    return {
+      counted: false,
+      completedMatches: rec.completedMatches,
+      wheelProgress: rec.wheelProgress,
+      triggeredWheel: false
+    };
+  }
+
+  rec.countedRooms.add(roomId);
+  rec.completedMatches = (rec.completedMatches || 0) + 1;
+  rec.wheelProgress = (rec.wheelProgress || 0) + 1;
+
+  let triggeredWheel = false;
+  if (rec.wheelProgress >= WHEEL_MATCH_STEP) {
+    triggeredWheel = true;
+    // Reset bộ đếm tiến trình về 0 để bắt đầu chu kỳ 3 trận tiếp theo
+    rec.wheelProgress = 0;
+  }
+
+  return {
+    counted: true,
+    completedMatches: rec.completedMatches,
+    wheelProgress: rec.wheelProgress,
+    triggeredWheel
+  };
+}
+
 function finishRoom(room, winnerRole, reason = 'nomoves') {
   if (!room || room.finished) return;
   room.finished = true;
   room.paused = false;
-  clearWheelTimers(room);
   clearDisconnectTimers(room);
 
   const W = getRoomRec(room, winnerRole);
@@ -548,11 +636,39 @@ function finishRoom(room, winnerRole, reason = 'nomoves') {
     const newL = Math.max(0, L.elo - baseGain);
     const baseLoss = Number((L.elo - newL).toFixed(1));
 
-    startQuizSession(room, winnerRole, 'win', baseGain, baseLoss);
-    startQuizSession(room, winnerRole ^ 1, 'loss', baseGain, baseLoss);
+    // Cập nhật số trận hoàn thành độc lập cho từng người chơi trong phòng
+    const roles = [winnerRole, winnerRole ^ 1];
+    roles.forEach((role) => {
+      const pid = role === 0 ? room.p1Pid : room.p2Pid;
+      const oppPid = role === 0 ? room.p2Pid : room.p1Pid;
+      const resultType = role === winnerRole ? 'win' : 'loss';
+      const eloBefore = room.eloBefore[role];
+
+      const status = recordPlayerMatchCompletion(pid, room.id);
+      const playerRec = recByPid(pid);
+      const sock = getRoomSocket(room, role);
+      if (sock && playerRec) {
+        sock.emit('profile', profileOf(playerRec));
+        sock.emit('match_progress_update', {
+          completedMatches: status.completedMatches,
+          wheelProgress: status.wheelProgress,
+          wheelStep: WHEEL_MATCH_STEP,
+          triggeredWheel: status.triggeredWheel
+        });
+      }
+
+      if (status.triggeredWheel) {
+        // Hoàn thành đủ 3 trận -> Quay Vòng quay may mắn trước, sau đó vào Quiz
+        triggerPostMatchLuckyWheel(pid, oppPid, status.completedMatches, () => {
+          startQuizSession(room, role, resultType, baseGain, baseLoss, eloBefore);
+        });
+      } else {
+        // Trận 1 hoặc 2 trong chu kỳ -> Không quay, vào thẳng Quiz sau trận
+        startQuizSession(room, role, resultType, baseGain, baseLoss, eloBefore);
+      }
+    });
   }
 
-  // Clean room lookup maps once finished
   if (pidToRoom.get(room.p1Pid) === room.id) pidToRoom.delete(room.p1Pid);
   if (pidToRoom.get(room.p2Pid) === room.id) pidToRoom.delete(room.p2Pid);
   roomsById.delete(room.id);
@@ -588,6 +704,30 @@ function leaveRoom(socket, immediate = true) {
 }
 
 function tryReconnectPlayer(socket, pid) {
+  // 1. Nếu người chơi đang trong sự kiện Vòng quay may mắn sau trận, đồng bộ lại modal
+  const activeWheel = pidToActiveWheel.get(pid);
+  if (activeWheel) {
+    socket.emit('lucky_wheel_start', {
+      eventId: activeWheel.eventId,
+      spinnerPid: activeWheel.spinnerPid,
+      spinnerName: activeWheel.spinnerName,
+      matchNumber: activeWheel.matchNumber,
+      milestone: activeWheel.matchNumber,
+      segments: WHEEL_SEGMENTS,
+      targetIndex: activeWheel.targetIndex,
+      rewardType: activeWheel.rewardType,
+      candidates: activeWheel.publicCandidates,
+      startedAt: activeWheel.startedAt,
+      spinDurationMs: activeWheel.spinDurationMs,
+      guessTimeoutMs: activeWheel.guessTimeoutMs,
+      guessRemainingMs: activeWheel.guessDeadlineAt ? Math.max(0, activeWheel.guessDeadlineAt - Date.now()) : 0
+    });
+    if (activeWheel.processed && activeWheel.resultPayload) {
+      socket.emit('lucky_wheel_result', activeWheel.resultPayload);
+    }
+  }
+
+  // 2. Đồng bộ nếu người chơi đang trong trận đấu diễn ra
   const roomId = pidToRoom.get(pid);
   if (!roomId) return false;
   const room = roomsById.get(roomId);
@@ -617,29 +757,6 @@ function tryReconnectPlayer(socket, pid) {
   const r1 = getRoomRec(room, 0);
   const r2 = getRoomRec(room, 1);
 
-  let wheelSync = null;
-  if (room.activeWheel) {
-    const w = room.activeWheel;
-    wheelSync = {
-      matchId: room.id,
-      eventId: w.eventId,
-      spinnerRole: w.spinnerRole,
-      spinnerName: w.spinnerName,
-      milestone: w.milestone,
-      segments: WHEEL_SEGMENTS,
-      targetIndex: w.targetIndex,
-      rewardType: w.rewardType,
-      candidates: w.publicCandidates,
-      startedAt: w.startedAt,
-      spinDurationMs: w.spinDurationMs,
-      guessTimeoutMs: w.guessTimeoutMs,
-      guessRemainingMs: w.guessDeadlineAt ? Math.max(0, w.guessDeadlineAt - Date.now()) : 0,
-      guessSubmitted: w.guessSubmitted,
-      processed: w.processed,
-      resultPayload: w.resultPayload
-    };
-  }
-
   socket.emit('match_sync', {
     roomId: room.id,
     role,
@@ -650,10 +767,12 @@ function tryReconnectPlayer(socket, pid) {
     p2Name: r2 ? r2.name : room.p2Name,
     elo: [r1 ? r1.elo : START_ELO, r2 ? r2.elo : START_ELO],
     moveCount: room.moveCount,
-    paused: room.paused,
-    buffs: { 0: { ...room.buffs[0] }, 1: { ...room.buffs[1] } },
-    lastStatePacket: room.lastStatePacket,
-    activeWheel: wheelSync
+    paused: false,
+    buffs: {
+      0: { x2: !!(r1 && r1.pendingX2Buff) },
+      1: { x2: !!(r2 && r2.pendingX2Buff) }
+    },
+    lastStatePacket: room.lastStatePacket
   });
 
   return true;
@@ -661,11 +780,13 @@ function tryReconnectPlayer(socket, pid) {
 
 io.on('connection', (socket) => {
   socket.emit('leaderboard_update', getLeaderboard());
+  socket.emit('stats_update', getSystemStats());
 
   socket.on('set_name', (data) => {
     const rec = identify(socket, data);
     socket.emit('profile', profileOf(rec));
     broadcastLeaderboard();
+    broadcastSystemStats();
 
     const u = users[socket.id];
     if (u && u.pid) {
@@ -676,6 +797,7 @@ io.on('connection', (socket) => {
   socket.on('find_match', (data) => {
     const rec = identify(socket, data);
     socket.emit('profile', profileOf(rec));
+    broadcastSystemStats();
 
     const u = users[socket.id];
     if (u && tryReconnectPlayer(socket, u.pid)) return;
@@ -691,7 +813,7 @@ io.on('connection', (socket) => {
     if (waitingPlayer) {
       const p1 = waitingPlayer, p2 = socket;
       waitingPlayer = null;
-      const roomId = 'room_' + p1.id + '_' + p2.id;
+      const roomId = 'room_' + p1.id + '_' + p2.id + '_' + crypto.randomBytes(3).toString('hex');
       p1.join(roomId); p2.join(roomId);
 
       const p1Pid = users[p1.id] ? users[p1.id].pid : 'anon_' + p1.id;
@@ -711,17 +833,17 @@ io.on('connection', (socket) => {
         tm: MATCH_MINUTES,
         initialSpots,
         currentTurn: firstTurn,
-        moveCount: 0,
+        moveCount: 0, // Chỉ đếm số lượt đi trong trận hiện tại (không dùng để kích hoạt Lucky Wheel)
         lastSpotsCount: initialSpots.length,
         lastLinesCount: 0,
         lastStatePacket: null,
         paused: false,
         finished: false,
-        triggeredMilestones: new Set(),
-        activeWheel: null,
-        buffs: { 0: { x2: false }, 1: { x2: false } },
+        buffs: {
+          0: { x2: !!r1.pendingX2Buff },
+          1: { x2: !!r2.pendingX2Buff }
+        },
         eloBefore: [r1.elo, r2.elo],
-        eloLedger: { 0: { stolen: 0, swap: 0 }, 1: { stolen: 0, swap: 0 } },
         disconnected: { 0: false, 1: false },
         disconnectTimers: { 0: null, 1: null }
       };
@@ -739,7 +861,8 @@ io.on('connection', (socket) => {
         tm: MATCH_MINUTES,
         p1Name: r1.name,
         p2Name: r2.name,
-        elo: [r1.elo, r2.elo]
+        elo: [r1.elo, r2.elo],
+        buffs: room.buffs
       };
       p1.emit('match_start', { ...matchData, role: 0 });
       p2.emit('match_start', { ...matchData, role: 1 });
@@ -763,12 +886,6 @@ io.on('connection', (socket) => {
     const senderRole = getRoomRole(room, socket.id);
     if (senderRole < 0) return;
 
-    // Block gameplay & resign actions while Lucky Wheel is active
-    if (room.paused) {
-      socket.emit('lucky_wheel_error', { message: 'Vòng quay may mắn đang diễn ra, tạm khóa thao tác.' });
-      return;
-    }
-
     if (msg.t === 'resign') {
       socket.to(room.id).emit('game_action', { t: 'resign', i: senderRole });
       finishRoom(room, senderRole ^ 1, 'resign');
@@ -784,7 +901,7 @@ io.on('connection', (socket) => {
       }
       if (!parsed || !Array.isArray(parsed.spots) || !Array.isArray(parsed.lines)) return;
 
-      // Validate turn and genuine Sprouts commit (1 new spot, 2 new edges)
+      // Xác thực lượt đi hợp lệ (1 điểm mới, 2 cạnh mới) - chỉ tăng moveCount cho gameplay
       if (!msg.lot) {
         if (senderRole !== room.currentTurn) return;
         const isValidNewCommit =
@@ -792,7 +909,6 @@ io.on('connection', (socket) => {
           parsed.lines.length === room.lastLinesCount + 2;
 
         if (!isValidNewCommit) {
-          // Ignore duplicate or malformed state packets
           return;
         }
 
@@ -803,10 +919,6 @@ io.on('connection', (socket) => {
         room.lastStatePacket = msg.s;
 
         socket.to(room.id).emit('game_action', msg);
-
-        if (!parsed.over && room.moveCount % WHEEL_MILESTONE_STEP === 0 && !room.triggeredMilestones.has(room.moveCount)) {
-          triggerLuckyWheel(room, senderRole, room.moveCount);
-        }
         return;
       }
     }
@@ -815,20 +927,16 @@ io.on('connection', (socket) => {
   });
 
   socket.on('lucky_wheel_guess', (data) => {
-    const room = rooms[socket.id];
-    if (!room || room.finished || !room.activeWheel) {
+    const u = users[socket.id];
+    const pid = u ? u.pid : null;
+    const wheel = pid ? pidToActiveWheel.get(pid) : null;
+
+    if (!wheel) {
       socket.emit('lucky_wheel_error', { message: 'Không có sự kiện vòng quay đang hoạt động.' });
       return;
     }
-    const senderRole = getRoomRole(room, socket.id);
-    const wheel = room.activeWheel;
-
     if (!data || typeof data !== 'object' || data.eventId !== wheel.eventId) {
       socket.emit('lucky_wheel_error', { message: 'Mã sự kiện vòng quay không hợp lệ.' });
-      return;
-    }
-    if (senderRole !== wheel.spinnerRole) {
-      socket.emit('lucky_wheel_error', { message: 'Chỉ người quay mới được chọn ứng viên.' });
       return;
     }
     if (wheel.rewardType !== 'guess_swap') {
@@ -853,12 +961,12 @@ io.on('connection', (socket) => {
 
     wheel.guessSubmitted = true;
     wheel.chosenId = candidateId;
-    resolveLuckyWheel(room, wheel.eventId, candidateId, false);
+    resolvePostMatchLuckyWheel(pid, wheel.eventId, candidateId, false);
   });
 
   socket.on('game_over', (data) => {
     const room = rooms[socket.id];
-    if (!room || room.finished || room.paused || !data) return;
+    if (!room || room.finished || !data) return;
     const winner = data.winner === 0 || data.winner === 1 ? data.winner : null;
     if (winner !== null) {
       const reason = ['nomoves', 'timeout', 'resign', 'forfeit'].includes(data.reason) ? data.reason : 'nomoves';
@@ -923,11 +1031,6 @@ io.on('connection', (socket) => {
           return;
         }
 
-        // Standardized Elo calculation pipeline:
-        // 1. Original match baseGain/baseLoss
-        // 2. Original Quiz bonus/penalty
-        // 3. Apply x2 buff only to eligible positive reward
-        // 4. Mid-match steal & swap already applied in real time; never double-counted
         let matchResultDelta = 0;
         let quizBonus = 0;
         let x2Bonus = 0;
@@ -956,7 +1059,11 @@ io.on('connection', (socket) => {
           playerRec.games++;
         }
 
-        const midMatchTotal = Number((session.midMatchSteal + session.midMatchSwap).toFixed(1));
+        if (session.hasX2) {
+          playerRec.pendingX2Buff = false;
+        }
+
+        const wheelTotal = Number((playerRec.elo - session.eloBefore - endOfMatchDelta).toFixed(1));
         const finalEloChange = Number((playerRec.elo - session.eloBefore).toFixed(1));
 
         socket.emit('quiz_completed', {
@@ -968,9 +1075,7 @@ io.on('connection', (socket) => {
             matchResult: matchResultDelta,
             quizBonus,
             luckyWheelBonus: x2Bonus,
-            stealDelta: session.midMatchSteal,
-            swapDelta: session.midMatchSwap,
-            stealSwapTotal: midMatchTotal,
+            stealSwapTotal: wheelTotal,
             finalEloChange,
             eloAfter: playerRec.elo
           }
@@ -987,6 +1092,7 @@ io.on('connection', (socket) => {
     leaveRoom(socket, false);
     delete users[socket.id];
     broadcastLeaderboard();
+    broadcastSystemStats();
   });
 });
 
